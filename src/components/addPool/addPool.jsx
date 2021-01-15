@@ -256,6 +256,7 @@ class AddPool extends Component {
     const selectedBasePool = basePools && basePools.length > 0 ? basePools[0] : null
 
     this.state = {
+      account: store.getStore('account'),
       assetInfo: null,
       basePools: basePools,
       basePool: selectedBasePool ? selectedBasePool.name : '',
