@@ -1,5 +1,5 @@
-import config from "../config";
-import async from 'async';
+import config from "../config"
+import async from 'async'
 import BigNumber from 'bignumber.js'
 
 import {
@@ -22,8 +22,8 @@ import {
   SWAP_RETURNED,
   GET_SWAP_AMOUNT,
   SWAP_AMOUNT_RETURNED,
-} from '../constants';
-import Web3 from 'web3';
+} from '../constants'
+import Web3 from 'web3'
 
 import {
   injected,
@@ -37,61 +37,99 @@ import {
   squarelink,
   torus,
   authereum
-} from "./connectors";
+} from "./connectors"
 
-const rp = require('request-promise');
+const rp = require('request-promise')
 
-const Dispatcher = require('flux').Dispatcher;
-const Emitter = require('events').EventEmitter;
+const Dispatcher = require('flux').Dispatcher
+const Emitter = require('events').EventEmitter
 
-const dispatcher = new Dispatcher();
-const emitter = new Emitter();
+const dispatcher = new Dispatcher()
+const emitter = new Emitter()
 
 class Store {
   constructor() {
 
     this.store = {
-      pools: [
+      pools: [],
+      basePools: [
         {
-          id: "musd3CRV",
-          name: 'Curve.fi MUSD/3Crv',
-          symbol: 'musd3CRV',
-          lpTokenAddress: '0x1AEf73d49Dedc4b1778d0706583995958Dc862e6',
-          liquidityAddress: '0x8474ddbe98f5aa3179b3b3f5942d724afcdec9f6',
+          id: 'usd',
+          name: 'DAI/USDC/USDT Pool',
+          erc20address: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
           balance: 0,
           decimals: 18,
-          assets: []
+          assets: [
+            {
+              index: 0,
+              id: 'DAI',
+              name: 'DAI',
+              symbol: 'DAI',
+              description: 'DAI',
+              erc20address: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+              balance: 0,
+              decimals: 18,
+            },
+            {
+              index: 1,
+              id: 'USDC',
+              name: 'USD Coin',
+              symbol: 'USDC',
+              description: 'USD//C',
+              erc20address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+              balance: 0,
+              decimals: 6,
+            },
+            {
+              index: 2,
+              id: 'USDT',
+              name: 'USDT',
+              symbol: 'USDT',
+              description: 'USDT',
+              erc20address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+              balance: 0,
+              decimals: 6,
+            },
+          ]
+        },
+        {
+          id: 'btc',
+          name: 'renBTC/wBTC/sBTC Pool',
+          erc20address: '0x7fC77b5c7614E1533320Ea6DDc2Eb61fa00A9714',
+          balance: 0,
+          decimals: 18,
+          assets: [
+            {
+              index: 0,
+              id: 'renBTC',
+              name: 'renBTC',
+              symbol: 'renBTC',
+              description: 'renBTC',
+              erc20address: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
+              balance: 0,
+              decimals: 8,
+            },
+            {
+              index: 1,
+              id: 'WBTC',
+              name: 'Wrapped BTC',
+              symbol: 'WBTC',
+              description: 'Wrapped BTC',
+              erc20address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
+              balance: 0,
+              decimals: 8,
+            },
+            {
+              id: 'sBTC',
+              name: 'Synth sBTC',
+              symbol: 'sBTC',
+              description: 'Synth sBTC',
+              erc20address: '0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6',
+              balance: 0,
+              decimals: 18,
+            },
+          ]
         }
-      ],
-      assets: [],
-      configAssets: [
-        {
-          id: 'USDT',
-          name: 'USDT',
-          symbol: 'USDT',
-          description: 'USDT',
-          erc20address: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-          balance: 0,
-          decimals: 6,
-        },
-        {
-          id: 'USDC',
-          name: 'USD Coin',
-          symbol: 'USDC',
-          description: 'USD//C',
-          erc20address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-          balance: 0,
-          decimals: 6,
-        },
-        {
-          id: 'DAI',
-          name: 'DAI',
-          symbol: 'DAI',
-          description: 'DAI',
-          erc20address: '0x6b175474e89094c44da98b954eedeac495271d0f',
-          balance: 0,
-          decimals: 18,
-        },
       ],
       connectorsByName: {
         MetaMask: injected,
@@ -115,16 +153,16 @@ class Store {
       function (payload) {
         switch (payload.type) {
           case CONFIGURE:
-            this.configure(payload);
-            break;
+            this.configure(payload)
+            break
           case GET_BALANCES:
-            this.getBalances(payload);
+            this.getBalances(payload)
             break
           case DEPOSIT:
-            this.deposit(payload);
+            this.deposit(payload)
             break
           case WITHDRAW:
-            this.withdraw(payload);
+            this.withdraw(payload)
             break
           case SWAP:
             this.swap(payload)
@@ -136,23 +174,19 @@ class Store {
           }
         }
       }.bind(this)
-    );
+    )
   }
 
   getStore(index) {
-    return(this.store[index]);
-  };
+    return(this.store[index])
+  }
 
   setStore(obj) {
     this.store = {...this.store, ...obj}
-    return emitter.emit('StoreUpdated');
-  };
+    return emitter.emit('StoreUpdated')
+  }
 
   _checkApproval = async (asset, account, amount, contract, callback) => {
-    if(asset.erc20address === 'Ethereum') {
-      return callback()
-    }
-
     try {
       const web3 = await this._getWeb3Provider()
       const erc20Contract = new web3.eth.Contract(config.erc20ABI, asset.erc20address)
@@ -160,7 +194,7 @@ class Store {
 
       let ethAllowance = web3.utils.fromWei(allowance, "ether")
       if (asset.decimals !== 18) {
-        ethAllowance = (allowance*10**asset.decimals).toFixed(0);
+        ethAllowance = (allowance*10**asset.decimals).toFixed(0)
       }
 
       var amountToSend = MAX_UINT256
@@ -180,38 +214,6 @@ class Store {
     }
   }
 
-  _checkApprovalWaitForConfirmation = async (asset, account, amount, contract, callback) => {
-    try {
-      const web3 = await this._getWeb3Provider()
-      const erc20Contract = new web3.eth.Contract(config.erc20ABI, asset.erc20address)
-      const allowance = await erc20Contract.methods.allowance(account.address, contract).call({ from: account.address })
-
-      const ethAllowance = web3.utils.fromWei(allowance, "ether")
-
-      if(parseFloat(ethAllowance) < parseFloat(amount)) {
-        erc20Contract.methods.approve(contract, web3.utils.toWei(amount, "ether")).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
-          .on('transactionHash', function(hash){
-            callback()
-          })
-          .on('error', function(error) {
-            if (!error.toString().includes("-32601")) {
-              if(error.message) {
-                return callback(error.message)
-              }
-              callback(error)
-            }
-          })
-      } else {
-        callback()
-      }
-    } catch(error) {
-     if(error.message) {
-       return callback(error.message)
-     }
-     callback(error)
-   }
-  }
-
   configure = async () => {
     const account = store.getStore('account')
 
@@ -219,133 +221,132 @@ class Store {
       return false
     }
 
-    const web3 = await this._getWeb3Provider();
-
-    const pools = this._getPools();
+    const web3 = await this._getWeb3Provider()
+    const pools = await this._getPools(web3)
 
     async.map(pools, (pool, callback) => {
-
-      this._getPoolData(web3, pool, account, (err, data) => {
-        if(err) {
-          return callback(err)
-        }
-
-        pool.balance = data.balance
-        pool.symbol = data.symbol
-        pool.decimals = data.decimals
-        pool.name = data.name
-        pool.id = data.symbol
-        pool.assets = data.assets
-
-        callback(null, pool)
-      })
+      this._getPoolData(web3, pool, account, callback)
     }, (err, poolData) => {
       if(err) {
-        emitter.emit(ERROR, err);
+        emitter.emit(ERROR, err)
         return emitter.emit(SNACKBAR_ERROR, err)
       }
+
+      console.log(poolData)
 
       store.setStore({ pools: poolData })
       return emitter.emit(CONFIGURE_RETURNED)
     })
   }
 
-  _getPools = () => {
-    //change this to use the pool factory created by Andre
-    return store.getStore('pools')
+  _getPools = async (web3) => {
+    try {
+      const curveFactoryContract = new web3.eth.Contract(config.curveFactoryABI, config.curveFactoryAddress)
+
+      const poolCount = await curveFactoryContract.methods.pool_count().call()
+
+      const pools = await Promise.all([...Array(parseInt(poolCount)).keys()].map(
+        i => curveFactoryContract.methods.pool_list(i).call()
+      ))
+
+      return pools
+    } catch (ex) {
+      emitter.emit(ERROR, ex)
+      emitter.emit(SNACKBAR_ERROR, ex)
+    }
   }
 
   getBalances = async () => {
     const account = store.getStore('account')
-    const assets = store.getStore('assets')
 
     if(!account || !account.address) {
       return false
     }
 
-    const web3 = await this._getWeb3Provider();
+    const web3 = await this._getWeb3Provider()
 
     return emitter.emit(BALANCES_RETURNED)
   }
 
   _getPoolData = async (web3, pool, account, callback) => {
     try {
-      const erc20Contract = new web3.eth.Contract(config.erc20ABI, pool.lpTokenAddress)
-      const metapoolContract = new web3.eth.Contract(config.metapoolABI, pool.liquidityAddress)
+      const erc20Contract = new web3.eth.Contract(config.erc20ABI, pool)
 
+      const symbol = await erc20Contract.methods.symbol().call()
+      const decimals = parseInt(await erc20Contract.methods.decimals().call())
+      const name = await erc20Contract.methods.name().call()
 
-      //POOL
-      const symbol = await erc20Contract.methods.symbol().call();
-      const decimals = await erc20Contract.methods.decimals().call();
-      const name = await erc20Contract.methods.name().call();
+      let balance = await erc20Contract.methods.balanceOf(account.address).call()
+      const bnDecimals = new BigNumber(10)
+        .pow(decimals)
 
-      let balance = await erc20Contract.methods.balanceOf(account.address).call();
-      balance = parseFloat(balance)/10**decimals
+      balance = new BigNumber(balance)
+        .dividedBy(bnDecimals)
+        .toFixed(decimals, BigNumber.ROUND_DOWN)
 
+      const curveFactoryContract = new web3.eth.Contract(config.curveFactoryABI, config.curveFactoryAddress)
+      const coins = await curveFactoryContract.methods.get_coins(pool).call()
 
-      const coin0 = await metapoolContract.methods.coins(0).call()
-      const coin1 = await metapoolContract.methods.coins(1).call()
+      async.map(coins, async (coin, callbackInner) => {
+        const erc20Contract0 = new web3.eth.Contract(config.erc20ABI, coin)
 
+        const symbol0 = await erc20Contract0.methods.symbol().call()
+        const decimals0 = parseInt(await erc20Contract0.methods.decimals().call())
+        const name0 = await erc20Contract0.methods.name().call()
 
-      //FIRST COIN
-      const erc20Contract0 = new web3.eth.Contract(config.erc20ABI, coin0)
+        let balance0 = await erc20Contract0.methods.balanceOf(account.address).call()
+        const bnDecimals0 = new BigNumber(10)
+          .pow(decimals0)
 
-      const symbol0 = await erc20Contract0.methods.symbol().call();
-      const decimals0 = await erc20Contract0.methods.decimals().call();
-      const name0 = await erc20Contract0.methods.name().call();
+        balance0 = new BigNumber(balance0)
+          .dividedBy(bnDecimals0)
+          .toFixed(decimals0, BigNumber.ROUND_DOWN)
 
-      let balance0 = await erc20Contract0.methods.balanceOf(account.address).call();
-      balance0 = parseFloat(balance0)/10**decimals0
+        const returnCoin = {
+          index: coins.indexOf(coin),
+          erc20address: coin,
+          symbol: symbol0,
+          decimals: decimals0,
+          name: name0,
+          balance: parseFloat(balance0)
+        }
 
+        if(callbackInner) {
+          callbackInner(null, returnCoin)
+        } else {
+          return returnCoin
+        }
+      }, (err, assets) => {
+        if(err) {
+          emitter.emit(ERROR, err)
+          return emitter.emit(SNACKBAR_ERROR, err)
+        }
 
-      //SECOND COIN
-      const erc20Contract1 = new web3.eth.Contract(config.erc20ABI, coin1)
+        let liquidityAddress = ''
+        let liquidityABI = ''
 
-      const symbol1 = await erc20Contract1.methods.symbol().call();
-      const decimals1 = await erc20Contract1.methods.decimals().call();
-      const name1 = await erc20Contract1.methods.name().call();
+        const basePools = store.getStore('basePools')
 
-      let balance1 = await erc20Contract1.methods.balanceOf(account.address).call();
-      balance1 = parseFloat(balance1)/10**decimals1
+        if(assets[1].erc20address.toLowerCase() === '0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490'.toLowerCase()) {
+          liquidityAddress = config.usdDepositerAddress
+          liquidityABI = config.usdDepositerABI
+        } else {
+          liquidityAddress = config.btcDepositerAddress
+          liquidityABI = config.btcDepositerABI
+        }
 
-
-      callback(null, {
-        symbol: symbol,
-        decimals: decimals,
-        name: name,
-        balance: balance,
-        assets: [
-          {
-            index: 0,
-            erc20address: coin0,
-            symbol: symbol0,
-            decimals: decimals0,
-            name: name0,
-            balance: balance0
-          },
-          {
-            index: 1,
-            erc20address: coin1,
-            symbol: symbol1,
-            decimals: decimals1,
-            name: name1,
-            balance: balance1
-          },
-        ]
+        callback(null, {
+          address: pool,
+          liquidityAddress: liquidityAddress,
+          liquidityABI: liquidityABI,
+          symbol: symbol,
+          decimals: decimals,
+          name: name,
+          balance: parseFloat(balance),
+          id: symbol,
+          assets: assets
+        })
       })
-    } catch(ex) {
-      console.log(ex)
-      return callback(ex)
-    }
-  }
-
-  _getERC20Balance = async (web3, asset, account, callback) => {
-    try {
-      const erc20Contract = new web3.eth.Contract(config.erc20ABI, asset.erc20address)
-
-      let balance = await erc20Contract.methods.balanceOf(account.address).call({ from: account.address });
-      balance = parseFloat(balance)/10**asset.decimals
-      callback(null, parseFloat(balance))
     } catch(ex) {
       console.log(ex)
       return callback(ex)
@@ -356,20 +357,20 @@ class Store {
     try {
       const { pool, firstAssetAmount, secondAssetAmount } = payload.content
       const account = store.getStore('account')
-      const web3 = await this._getWeb3Provider();
+      const web3 = await this._getWeb3Provider()
 
       const firstAsset = pool.assets[0]
       const secondAsset = pool.assets[1]
 
       this._checkApproval(firstAsset, account, firstAssetAmount, pool.liquidityAddress, (err) => {
         if(err) {
-          emitter.emit(ERROR, err);
+          emitter.emit(ERROR, err)
           return emitter.emit(SNACKBAR_ERROR, err)
         }
 
         this._checkApproval(secondAsset, account, secondAssetAmount, pool.liquidityAddress, (err) => {
           if(err) {
-            emitter.emit(ERROR, err);
+            emitter.emit(ERROR, err)
             return emitter.emit(SNACKBAR_ERROR, err)
           }
 
@@ -380,7 +381,7 @@ class Store {
 
             amountToSend0 = new BigNumber(firstAssetAmount)
               .times(decimals)
-              .toFixed(0);
+              .toFixed(0)
           }
 
           let amountToSend1 = web3.utils.toWei(secondAssetAmount, "ether")
@@ -390,7 +391,7 @@ class Store {
 
             amountToSend1 = new BigNumber(secondAssetAmount)
               .times(decimals)
-              .toFixed(0);
+              .toFixed(0)
           }
 
           this._callAddLiquidity(web3, account, pool, amountToSend0, amountToSend1, (err, a) => {
@@ -411,18 +412,19 @@ class Store {
   }
 
   _callAddLiquidity = async (web3, account, pool, amountToSend0, amountToSend1, callback) => {
-    const metapoolContract = new web3.eth.Contract(config.metapoolABI, pool.liquidityAddress)
+    const metapoolContract = new web3.eth.Contract(pool.liquidityABI, pool.liquidityAddress)
 
-    const amountToReceive = await metapoolContract.methods.calc_token_amount([amountToSend0, amountToSend1], true).call()
+    console.log(pool.liquidityAddress)
+    const amountToReceive = await metapoolContract.methods.calc_token_amount(pool.address, [amountToSend0, amountToSend1], true).call()
 
     const receive = new BigNumber(amountToReceive)
       .times(95)
       .dividedBy(100)
-      .toFixed(0);
+      .toFixed(0)
 
-    console.log([amountToSend0, amountToSend1], receive)
+    console.log(pool.address, [amountToSend0, amountToSend1], receive)
 
-    metapoolContract.methods.add_liquidity([amountToSend0, amountToSend1], receive).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+    metapoolContract.methods.add_liquidity(pool.address, [amountToSend0, amountToSend1], receive).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
     .on('transactionHash', function(hash){
       emitter.emit(SNACKBAR_TRANSACTION_HASH, hash)
       callback(null, hash)
@@ -446,7 +448,7 @@ class Store {
     try {
       const { pool, amount } = payload.content
       const account = store.getStore('account')
-      const web3 = await this._getWeb3Provider();
+      const web3 = await this._getWeb3Provider()
 
       let amountToSend = web3.utils.toWei(amount, "ether")
       if (pool.decimals !== 18) {
@@ -455,7 +457,7 @@ class Store {
 
         amountToSend = new BigNumber(amount)
           .times(decimals)
-          .toFixed(0);
+          .toFixed(0)
       }
 
       this._callRemoveLiquidity(web3, account, pool, amountToSend, (err, a) => {
@@ -474,11 +476,11 @@ class Store {
   }
 
   _callRemoveLiquidity = async (web3, account, pool, amountToSend, callback) => {
-    const metapoolContract = new web3.eth.Contract(config.metapoolABI, pool.liquidityAddress)
+    const metapoolContract = new web3.eth.Contract(pool.liquidityABI, pool.liquidityAddress)
 
     //calcualte minimum amounts ?
 
-    metapoolContract.methods.remove_liquidity(amountToSend, [0, 0]).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+    metapoolContract.methods.remove_liquidity(pool.address, amountToSend, [0, 0]).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
     .on('transactionHash', function(hash){
       emitter.emit(SNACKBAR_TRANSACTION_HASH, hash)
       callback(null, hash)
@@ -502,7 +504,7 @@ class Store {
     try {
       const { pool, from, to, amount } = payload.content
       const account = store.getStore('account')
-      const web3 = await this._getWeb3Provider();
+      const web3 = await this._getWeb3Provider()
 
       let amountToSend = web3.utils.toWei(amount, "ether")
       if (from.decimals !== 18) {
@@ -511,10 +513,10 @@ class Store {
 
         amountToSend = new BigNumber(amount)
           .times(decimals)
-          .toFixed(0);
+          .toFixed(0)
       }
 
-      const metapoolContract = new web3.eth.Contract(config.metapoolABI, pool.liquidityAddress)
+      const metapoolContract = new web3.eth.Contract(config.metapoolABI, pool.address)
       const amountToReceive = await metapoolContract.methods.get_dy(from.index, to.index, amountToSend).call()
 
       const returnObj = {
@@ -536,11 +538,11 @@ class Store {
     try {
       const { from, to, pool, amount } = payload.content
       const account = store.getStore('account')
-      const web3 = await this._getWeb3Provider();
+      const web3 = await this._getWeb3Provider()
 
-      this._checkApproval(from, account, amount, pool.liquidityAddress, async (err) => {
+      this._checkApproval(from, account, amount, pool.address, async (err) => {
         if(err) {
-          emitter.emit(ERROR, err);
+          emitter.emit(ERROR, err)
           return emitter.emit(SNACKBAR_ERROR, err)
         }
 
@@ -551,10 +553,10 @@ class Store {
 
           amountToSend = new BigNumber(amount)
             .times(decimals)
-            .toFixed(0);
+            .toFixed(0)
         }
 
-        const metapoolContract = new web3.eth.Contract(config.metapoolABI, pool.liquidityAddress)
+        const metapoolContract = new web3.eth.Contract(config.metapoolABI, pool.address)
         const amountToReceive = await metapoolContract.methods.get_dy(from.index, to.index, amountToSend).call()
 
         this._callExchange(web3, account, from, to, pool, amountToSend, amountToReceive, (err, a) => {
@@ -574,12 +576,12 @@ class Store {
   }
 
   _callExchange = async (web3, account, from, to, pool, amountToSend, amountToReceive, callback) => {
-    const metapoolContract = new web3.eth.Contract(config.metapoolABI, pool.liquidityAddress)
+    const metapoolContract = new web3.eth.Contract(config.metapoolABI, pool.address)
 
     const receive = new BigNumber(amountToReceive)
       .times(95)
       .dividedBy(100)
-      .toFixed(0);
+      .toFixed(0)
 
     metapoolContract.methods.exchange(from.index, to.index, amountToSend, receive).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
     .on('transactionHash', function(hash){
@@ -604,7 +606,7 @@ class Store {
   _getGasPrice = async () => {
     try {
       const url = 'https://gasprice.poa.network/'
-      const priceString = await rp(url);
+      const priceString = await rp(url)
       const priceJSON = JSON.parse(priceString)
       if(priceJSON) {
         return priceJSON.fast.toFixed(0)
@@ -627,16 +629,16 @@ class Store {
       return null
     }
 
-    const web3 = new Web3(provider);
+    const web3 = new Web3(provider)
 
     return web3
   }
 }
 
-var store = new Store();
+var store = new Store()
 
 export default {
   store: store,
   dispatcher: dispatcher,
   emitter: emitter
-};
+}

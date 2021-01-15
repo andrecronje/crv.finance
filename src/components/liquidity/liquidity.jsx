@@ -175,22 +175,23 @@ class Liquidity extends Component {
 
     const account = store.getStore('account')
     const pools = store.getStore('pools')
+    const selectedPool = pools && pools.length > 0 ? pools[0] : null
 
     this.state = {
       assets: store.getStore('assets'),
       account: account,
       pools: pools,
-      pool: pools && pools.length > 0 ? pools[0].symbol : '',
-
+      pool: selectedPool ? selectedPool.symbol : '',
+      selectedPool: selectedPool,
       poolAmount: '',
       poolAmountError: '',
       loading: !(pools && pools.length > 0 && pools[0].assets.length > 0),
       activeTab: 'deposit',
     }
 
-    if(account && account.address) {
-      dispatcher.dispatch({ type: GET_BALANCES, content: {} })
-    }
+    // if(account && account.address) {
+      // dispatcher.dispatch({ type: GET_BALANCES, content: {} })
+    // }
   }
   componentWillMount() {
     emitter.on(ERROR, this.errorReturned);
@@ -211,20 +212,22 @@ class Liquidity extends Component {
   configureReturned = () => {
 
     const pools = store.getStore('pools')
+    const selectedPool = pools && pools.length > 0 ? pools[0] : null
 
     this.setState({
       account: store.getStore('account'),
       pools: pools,
-      pool: pools && pools.length > 0 ? pools[0].symbol : '',
+      pool: selectedPool ? selectedPool.symbol : '',
+      selectedPool: selectedPool,
       loading: false,
     })
 
     const val = []
-    val[pools[0].assets[0].symbol+'Amount'] = pools[0].assets[0].balance.toFixed(pools[0].assets[0].decimals)
-    val[pools[0].assets[1].symbol+'Amount'] = pools[0].assets[1].balance.toFixed(pools[0].assets[1].decimals)
+    val[selectedPool.assets[0].symbol+'Amount'] = selectedPool.assets[0].balance.toFixed(selectedPool.assets[0].decimals)
+    val[selectedPool.assets[1].symbol+'Amount'] = selectedPool.assets[1].balance.toFixed(selectedPool.assets[1].decimals)
     this.setState(val)
 
-    dispatcher.dispatch({ type: GET_BALANCES, content: {} })
+    // dispatcher.dispatch({ type: GET_BALANCES, content: {} })
   };
 
   balancesReturned = (balances) => {
@@ -290,12 +293,9 @@ class Liquidity extends Component {
       pools,
       pool,
       poolAmount,
-      poolAmountError
+      poolAmountError,
+      selectedPool
     } = this.state
-
-    const thePool = pools.filter((p) => {
-      return p.id === pool
-    })[0]
 
     return (
       <div className={ classes.valContainer }>
@@ -304,7 +304,7 @@ class Liquidity extends Component {
             <Typography variant='h4'>pool</Typography>
           </div>
           <div className={ classes.balances }>
-            { (thePool ? (<Typography variant='h4' onClick={ () => { this.setAmount(thePool.symbol, 'pool', (thePool ? thePool.balance.toFixed(thePool.decimals) : '0')) } } className={ classes.value } noWrap>{ ''+ ( thePool && thePool.balance ? (Math.floor(thePool.balance*10000)/10000).toFixed(4) : '0.0000') } { thePool ? thePool.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
+            { (selectedPool ? (<Typography variant='h4' onClick={ () => { this.setAmount(selectedPool.symbol, 'pool', (selectedPool ? selectedPool.balance.toFixed(selectedPool.decimals) : '0')) } } className={ classes.value } noWrap>{ ''+ ( selectedPool && selectedPool.balance ? (Math.floor(selectedPool.balance*10000)/10000).toFixed(4) : '0.0000') } { selectedPool ? selectedPool.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
           </div>
         </div>
         <div>
@@ -441,18 +441,15 @@ class Liquidity extends Component {
     const {
       loading,
       pools,
-      pool
+      pool,
+      selectedPool
     } = this.state
-
-    const thePool = this.state.pools.filter((p) => {
-      return p.id === pool
-    })[0]
 
     return (
       <React.Fragment>
         { this.renderPoolSelect() }
         {
-          thePool && thePool.assets && thePool.assets.length > 0 && thePool.assets.map((p) => {
+          selectedPool && selectedPool.assets && selectedPool.assets.length > 0 && selectedPool.assets.map((p) => {
             return this.renderAssetInput(p, 'deposit')
           })
         }
@@ -475,23 +472,12 @@ class Liquidity extends Component {
     const {
       loading,
       pools,
-      pool
+      pool,
     } = this.state
-
-    const thePool = this.state.pools.filter((p) => {
-      return p.id === pool
-    })[0]
 
     return (
       <React.Fragment>
         { this.renderPoolSelectInput() }
-        {
-          /*
-          thePool && thePool.assets && thePool.assets.length > 0 && thePool.assets.map((p) => {
-            return this.renderAssetInput(p, 'withdraw')
-          })
-          */
-        }
         <Button
           className={ classes.actionButton }
           variant="outlined"
@@ -517,7 +503,6 @@ class Liquidity extends Component {
 
     const {
       loading,
-      assets
     } = this.state
 
     let type = asset.symbol
@@ -572,8 +557,17 @@ class Liquidity extends Component {
   }
 
   onPoolSelectChange = (event) => {
-    let val = []
+    const thePool = this.state.pools.filter((pool) => {
+      return pool.id === event.target.value
+    })
+
+    const val = []
     val[event.target.name] = event.target.value
+    val['selectedPool'] = thePool[0]
+    val[thePool[0].assets[0].symbol+'Amount'] = thePool[0].assets[0].balance.toFixed(thePool[0].assets[0].decimals)
+    val[thePool[0].assets[1].symbol+'Amount'] = thePool[0].assets[1].balance.toFixed(thePool[0].assets[1].decimals)
+    this.setState(val)
+
     this.setState(val)
   }
 
@@ -592,57 +586,53 @@ class Liquidity extends Component {
   toggleDeposit = () => {
     this.setState({ activeTab: 'deposit', poolAmount: '' })
 
-    const { pools, pool } = this.state
+    const {
+      pools,
+      pool,
+      selectedPool
+    } = this.state
 
-    const thePool = pools.filter((p) => {
-      return p.symbol === pool
-    })[0]
-
-    if(!thePool) {
+    if(!selectedPool) {
       return false
     }
 
     const val = []
-    val[thePool.assets[0].symbol+'Amount'] = thePool.assets[0].balance.toFixed(thePool.assets[0].decimals)
-    val[thePool.assets[1].symbol+'Amount'] = thePool.assets[1].balance.toFixed(thePool.assets[1].decimals)
+    val[selectedPool.assets[0].symbol+'Amount'] = selectedPool.assets[0].balance.toFixed(selectedPool.assets[0].decimals)
+    val[selectedPool.assets[1].symbol+'Amount'] = selectedPool.assets[1].balance.toFixed(selectedPool.assets[1].decimals)
     this.setState(val)
   }
 
   toggleWithdraw = () => {
     this.setState({ activeTab: 'withdraw', poolAmount: '' })
 
-    const { pools, pool } = this.state
+    const {
+      pools,
+      pool,
+      selectedPool
+    } = this.state
 
-    const thePool = pools.filter((p) => {
-      return p.symbol === pool
-    })[0]
-
-    if(!thePool) {
+    if(!selectedPool) {
       return false
     }
 
     const val = []
-    val[thePool.assets[0].symbol+'Amount'] = ''
-    val[thePool.assets[1].symbol+'Amount'] = ''
+    val[selectedPool.assets[0].symbol+'Amount'] = ''
+    val[selectedPool.assets[1].symbol+'Amount'] = ''
     this.setState(val)
 
-    //mmaybe do calculation for estimated amounts
   }
 
   onDeposit = () => {
     const {
       pool,
-      pools
+      pools,
+      selectedPool
     } = this.state
 
     let error = false
 
-    const thePool = pools.filter((p) => {
-      return p.symbol === pool
-    })[0]
-
-    const firstAsset = thePool.assets[0]
-    const secondAsset = thePool.assets[1]
+    const firstAsset = selectedPool.assets[0]
+    const secondAsset = selectedPool.assets[1]
 
     const firstAssetAmount = this.state[firstAsset.symbol+'Amount']
     const secondAssetAmount = this.state[secondAsset.symbol+'Amount']
@@ -651,7 +641,6 @@ class Liquidity extends Component {
     errVal[firstAsset.symbol+'AmountError'] = false
     errVal[secondAsset.symbol+'AmountError'] = false
     this.setState(errVal)
-
 
     if(firstAssetAmount > firstAsset.balance) {
       const val = []
@@ -669,26 +658,27 @@ class Liquidity extends Component {
 
     if(!error) {
       this.setState({ loading: true })
-      dispatcher.dispatch({ type: DEPOSIT, content: { pool: thePool, firstAssetAmount: firstAssetAmount, secondAssetAmount: secondAssetAmount } })
+      dispatcher.dispatch({ type: DEPOSIT, content: { pool: selectedPool, firstAssetAmount: firstAssetAmount, secondAssetAmount: secondAssetAmount } })
     }
   }
 
   onWithdraw = () => {
     this.setState({ poolAmountError: false })
 
-    const { poolAmount, pool, pools } = this.state
+    const {
+      poolAmount,
+      pool,
+      pools,
+      selectedPool
+    } = this.state
 
-    const thePool = pools.filter((p) => {
-      return p.id === pool
-    })[0]
-
-    if(!poolAmount || isNaN(poolAmount) || poolAmount <= 0 || poolAmount > thePool.balance) {
+    if(!poolAmount || isNaN(poolAmount) || poolAmount <= 0 || poolAmount > selectedPool.balance) {
       this.setState({ poolAmountError: true })
       return false
     }
 
     this.setState({ loading: true })
-    dispatcher.dispatch({ type: WITHDRAW, content: { amount: poolAmount, pool: thePool } })
+    dispatcher.dispatch({ type: WITHDRAW, content: { amount: poolAmount, pool: selectedPool } })
   }
 }
 

@@ -202,13 +202,14 @@ class Swap extends Component {
 
     const account = store.getStore('account')
     const pools = store.getStore('pools')
+    const selectedPool = pools && pools.length > 0 ? pools[0] : null
 
     this.state = {
       pools: pools,
-      pool: pools && pools.length > 0 ? pools[0].symbol : '',
-      assets: pools && pools.length > 0 ? pools[0].assets : [],
-      fromAsset: pools && pools.length > 0 && pools[0].assets.length > 0 ? pools[0].assets[0].symbol : '',
-      toAsset: pools && pools.length > 0 && pools[0].assets.length > 0 ? pools[0].assets[1].symbol : '',
+      pool: selectedPool ? selectedPool.symbol : '',
+      selectedPool: selectedPool,
+      fromAsset: selectedPool && selectedPool.assets.length > 0 ? selectedPool.assets[0].symbol : '',
+      toAsset: selectedPool && selectedPool.assets.length > 0 ? selectedPool.assets[1].symbol : '',
       account: account,
       fromAmount: '',
       fromAmountError: false,
@@ -238,20 +239,20 @@ class Swap extends Component {
   };
 
   configureReturned = () => {
-
     const pools = store.getStore('pools')
+    const selectedPool = pools && pools.length > 0 ? pools[0] : null
 
     this.setState({
       account: store.getStore('account'),
       pools: pools,
-      pool: pools && pools.length > 0 ? pools[0].symbol : '',
-      assets: pools && pools.length > 0 ? pools[0].assets : [],
-      fromAsset: pools && pools.length > 0 && pools[0].assets.length > 0 ? pools[0].assets[0].symbol : '',
-      toAsset: pools && pools.length > 0 && pools[0].assets.length > 0 ? pools[0].assets[1].symbol : '',
+      pool: selectedPool ? selectedPool.symbol : '',
+      selectedPool: selectedPool,
+      fromAsset: selectedPool && selectedPool.assets.length > 0 ? selectedPool.assets[0].symbol : '',
+      toAsset: selectedPool && selectedPool.assets.length > 0 ? selectedPool.assets[1].symbol : '',
       loading: false
     })
 
-    dispatcher.dispatch({ type: GET_BALANCES, content: {} })
+    // dispatcher.dispatch({ type: GET_BALANCES, content: {} })
   };
 
   connectionDisconnected = () => {
@@ -259,15 +260,15 @@ class Swap extends Component {
   }
 
   balancesReturned = (balances) => {
-
     const pools = store.getStore('pools')
+    const selectedPool = pools && pools.length > 0 ? pools[0] : null
 
     this.setState({
       pools: pools,
-      pool: pools && pools.length > 0 ? pools[0].symbol : '',
-      assets: pools && pools.length > 0 ? pools[0].assets : [],
-      fromAsset: pools && pools.length > 0 && pools[0].assets.length > 0 ? pools[0].assets[0].symbol : '',
-      toAsset: pools && pools.length > 0 && pools[0].assets.length > 0 ? pools[0].assets[1].symbol : '',
+      pool: selectedPool ? selectedPool.symbol : '',
+      selectedPool: selectedPool,
+      fromAsset: selectedPool && selectedPool.assets.length > 0 ? selectedPool.assets[0].symbol : '',
+      toAsset: selectedPool && selectedPool.assets.length > 0 ? selectedPool.assets[1].symbol : '',
     })
   };
 
@@ -389,16 +390,21 @@ class Swap extends Component {
 
     const {
       loading,
-      assets
+      pools,
+      selectedPool
     } = this.state
 
     const that = this
 
-    let asset = assets.filter((asset) => { return asset.symbol === that.state[type+"Asset"] })
-    if(asset.length > 0) {
-      asset = asset[0]
-    } else {
-      asset = null
+    let asset = null
+
+    if(selectedPool && selectedPool.assets) {
+      asset = selectedPool.assets.filter((asset) => { return asset.symbol === that.state[type+"Asset"] })
+      if(asset.length > 0) {
+        asset = asset[0]
+      } else {
+        asset = null
+      }
     }
 
     const amount = this.state[type+"Amount"]
@@ -435,7 +441,7 @@ class Swap extends Component {
   }
 
   renderAssetSelect = (id) => {
-    const { loading, assets } = this.state
+    const { loading, selectedPool } = this.state
     const { classes } = this.props
 
     return (
@@ -453,7 +459,7 @@ class Swap extends Component {
         placeholder={ 'Select' }
         className={ classes.assetSelectRoot }
       >
-        { assets ? assets.map(this.renderAssetOption) : null }
+        { selectedPool && selectedPool.assets ? selectedPool.assets.map(this.renderAssetOption) : null }
       </TextField>
     )
   }
@@ -508,14 +514,15 @@ class Swap extends Component {
     val[event.target.name] = event.target.value
     this.setState(val)
 
-    let thePool = this.state.pools.filter((pool) => {
+    const thePool = this.state.pools.filter((pool) => {
       return pool.id === event.target.value
     })
 
     //on change pool change assets as well
     this.setState({
       fromAsset: thePool[0].assets.[0].symbol,
-      toAsset: thePool[0].assets.[1].symbol
+      toAsset: thePool[0].assets.[1].symbol,
+      selectedPool: thePool[0]
     })
 
     const that = this
@@ -530,21 +537,17 @@ class Swap extends Component {
     val[event.target.name] = event.target.value
     this.setState(val)
 
-    const { pools, pool } = this.state
-
-    let thePool = pools.filter((p) => {
-      return p.id === pool
-    })[0]
+    const { pools, pool, selectedPool } = this.state
 
     const value = event.target.value
 
     if(event.target.name === 'fromAsset') {
-      this.setState({ toAsset: thePool.assets.filter((asset) => {
+      this.setState({ toAsset: selectedPool.assets.filter((asset) => {
           return asset.symbol !== value
         })[0].symbol
       })
     } else {
-      this.setState({ fromAsset: thePool.assets.filter((asset) => {
+      this.setState({ fromAsset: selectedPool.assets.filter((asset) => {
           return asset.symbol !== value
         })[0].symbol
       })
@@ -577,18 +580,15 @@ class Swap extends Component {
       toAsset,
       pool,
       pools,
+      selectedPool,
       fromAmount
     } = this.state
 
-    let thePool = pools.filter((p) => {
-      return p.id === pool
-    })[0]
-
-    const from = thePool.assets.filter((asset) => {
+    const from = selectedPool.assets.filter((asset) => {
       return asset.symbol === fromAsset
     })[0]
 
-    const to = thePool.assets.filter((asset) => {
+    const to = selectedPool.assets.filter((asset) => {
       return asset.symbol === toAsset
     })[0]
 
@@ -601,7 +601,7 @@ class Swap extends Component {
       return false
     }
 
-    dispatcher.dispatch({ type: GET_SWAP_AMOUNT, content: { pool: thePool, from: from, to: to, amount: fromAmount } })
+    dispatcher.dispatch({ type: GET_SWAP_AMOUNT, content: { pool: selectedPool, from: from, to: to, amount: fromAmount } })
   }
 
   onSwap = () => {
@@ -612,18 +612,15 @@ class Swap extends Component {
       toAsset,
       pool,
       pools,
+      selectedPool,
       fromAmount
     } = this.state
 
-    let thePool = pools.filter((p) => {
-      return p.id === pool
-    })[0]
-
-    const from = thePool.assets.filter((asset) => {
+    const from = selectedPool.assets.filter((asset) => {
       return asset.symbol === fromAsset
     })[0]
 
-    const to = thePool.assets.filter((asset) => {
+    const to = selectedPool.assets.filter((asset) => {
       return asset.symbol === toAsset
     })[0]
 
@@ -633,7 +630,7 @@ class Swap extends Component {
     }
 
     this.setState({ loading: true })
-    dispatcher.dispatch({ type: SWAP, content: { pool: thePool, from: from, to: to, amount: fromAmount } })
+    dispatcher.dispatch({ type: SWAP, content: { pool: selectedPool, from: from, to: to, amount: fromAmount } })
   }
 }
 
