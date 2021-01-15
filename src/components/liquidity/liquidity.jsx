@@ -689,6 +689,30 @@ class Liquidity extends Component {
     let val = []
     val[type+"Amount"] = balance
     this.setState(val)
+
+    const {
+      selectedPool
+    } = this.state
+
+    let amounts = []
+
+    for(let i = 0; i < selectedPool.assets.length; i++) {
+
+      let am = '0'
+      if(type+"Amount" === selectedPool.assets[i].symbol+'Amount') {
+        am = balance
+      } else {
+        am = this.state[selectedPool.assets[i].symbol+'Amount']
+      }
+
+      if(am !== '' && !isNaN(am)) {
+        amounts.push(am)
+      } else {
+        amounts.push('0')
+      }
+    }
+
+    dispatcher.dispatch({ type: GET_DEPOSIT_AMOUNT, content: { pool: selectedPool, amounts: amounts }})
   }
 
   toggleDeposit = () => {
