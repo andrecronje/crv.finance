@@ -40,6 +40,7 @@ export const WITHDRAW_RETURNED = 'WITHDRAW_RETURNED'
 
 
 // #GENERAL
+export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' 
 export const MAX_UINT256 = new BigNumber(2)
   .pow(256)
   .minus(1)

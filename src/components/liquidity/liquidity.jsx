@@ -178,7 +178,6 @@ class Liquidity extends Component {
     const selectedPool = pools && pools.length > 0 ? pools[0] : null
 
     this.state = {
-      assets: store.getStore('assets'),
       account: account,
       pools: pools,
       pool: selectedPool ? selectedPool.symbol : '',
@@ -223,8 +222,11 @@ class Liquidity extends Component {
     })
 
     const val = []
-    val[selectedPool.assets[0].symbol+'Amount'] = selectedPool.assets[0].balance.toFixed(selectedPool.assets[0].decimals)
-    val[selectedPool.assets[1].symbol+'Amount'] = selectedPool.assets[1].balance.toFixed(selectedPool.assets[1].decimals)
+
+    for(let i = 0; i < selectedPool.assets.length; i++) {
+      val[selectedPool.assets[i].symbol+'Amount'] = selectedPool.assets[i].balance.toFixed(selectedPool.assets[i].decimals)
+    }
+
     this.setState(val)
 
     // dispatcher.dispatch({ type: GET_BALANCES, content: {} })
@@ -631,34 +633,15 @@ class Liquidity extends Component {
 
     let error = false
 
-    const firstAsset = selectedPool.assets[0]
-    const secondAsset = selectedPool.assets[1]
+    let amounts = []
 
-    const firstAssetAmount = this.state[firstAsset.symbol+'Amount']
-    const secondAssetAmount = this.state[secondAsset.symbol+'Amount']
-
-    const errVal = []
-    errVal[firstAsset.symbol+'AmountError'] = false
-    errVal[secondAsset.symbol+'AmountError'] = false
-    this.setState(errVal)
-
-    if(firstAssetAmount > firstAsset.balance) {
-      const val = []
-      val[firstAsset.symbol+'AmountError'] = true
-      this.setState(val)
-      error = true
-    }
-
-    if(secondAssetAmount > secondAsset.balance) {
-      const val = []
-      val[secondAsset.symbol+'AmountError'] = true
-      this.setState(val)
-      error = true
+    for(let i = 0; i < selectedPool.assets.length; i++) {
+      amounts.push(this.state[selectedPool.assets[i].symbol+'Amount'])
     }
 
     if(!error) {
       this.setState({ loading: true })
-      dispatcher.dispatch({ type: DEPOSIT, content: { pool: selectedPool, firstAssetAmount: firstAssetAmount, secondAssetAmount: secondAssetAmount } })
+      dispatcher.dispatch({ type: DEPOSIT, content: { pool: selectedPool, amounts: amounts } })
     }
   }
 
