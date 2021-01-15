@@ -201,6 +201,7 @@ class Store {
 
   _checkApproval2 = async (asset, account, amount, contract) => {
     try {
+      console.log(asset)
       const web3 = await this._getWeb3Provider()
       const erc20Contract = new web3.eth.Contract(config.erc20ABI, asset.erc20address)
       const allowance = await erc20Contract.methods.allowance(account.address, contract).call({ from: account.address })
@@ -213,13 +214,16 @@ class Store {
       var amountToSend = MAX_UINT256
 
       if(parseFloat(ethAllowance) < parseFloat(amount)) {
+
         await erc20Contract.methods.approve(contract, amountToSend).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+
         return true
       } else {
         return true
       }
 
     } catch(error) {
+      console.log(error)
       if(error.message) {
         return false
       }
@@ -383,7 +387,9 @@ class Store {
 
         const basePools = store.getStore('basePools')
 
-        if(assets[1].erc20address.toLowerCase() === '0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490'.toLowerCase()) {
+        console.log(assets);
+
+        if(assets[1].erc20address.toLowerCase() === '0x6B175474E89094C44Da98b954EedeAC495271d0F'.toLowerCase()) {
           liquidityAddress = config.usdDepositerAddress
           liquidityABI = config.usdDepositerABI
         } else {
@@ -502,6 +508,11 @@ class Store {
           .toFixed(0)
       }
 
+      console.log(pool);
+
+      await this._checkApproval2({erc20address:pool.address, decimals:18}, account, amountToSend, pool.liquidityAddress)
+
+
       this._callRemoveLiquidity(web3, account, pool, amountToSend, (err, a) => {
         if(err) {
           emitter.emit(ERROR, err)
@@ -510,6 +521,7 @@ class Store {
 
         emitter.emit(WITHDRAW_RETURNED)
       })
+
 
     } catch (ex) {
       emitter.emit(ERROR, ex)
@@ -522,7 +534,7 @@ class Store {
 
     //calcualte minimum amounts ?
 
-    metapoolContract.methods.remove_liquidity(pool.address, amountToSend, [0, 0]).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+    metapoolContract.methods.remove_liquidity(pool.address, amountToSend, [0, 0, 0, 0]).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
     .on('transactionHash', function(hash){
       emitter.emit(SNACKBAR_TRANSACTION_HASH, hash)
       callback(null, hash)
