@@ -24,6 +24,11 @@ import {
   SWAP_RETURNED,
   GET_SWAP_AMOUNT,
   SWAP_AMOUNT_RETURNED,
+
+  GET_ASSET_INFO,
+  GET_ASSET_INFO_RETURNED,
+  ADD_POOL,
+  ADD_POOL_RETURNED
 } from '../constants'
 import Web3 from 'web3'
 
@@ -56,7 +61,7 @@ class Store {
       pools: [],
       basePools: [
         {
-          id: 'usd',
+          id: 'USD',
           name: 'DAI/USDC/USDT Pool',
           erc20address: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
           balance: 0,
@@ -95,7 +100,7 @@ class Store {
           ]
         },
         {
-          id: 'btc',
+          id: 'BTC',
           name: 'renBTC/wBTC/sBTC Pool',
           erc20address: '0x7fC77b5c7614E1533320Ea6DDc2Eb61fa00A9714',
           balance: 0,
@@ -172,6 +177,12 @@ class Store {
           case GET_SWAP_AMOUNT:
             this.getSwapAmount(payload)
             break
+          case GET_ASSET_INFO:
+            this.getAssetInfo(payload)
+            break
+          case ADD_POOL:
+            this.addPool(payload)
+            break;
           default: {
           }
         }
@@ -615,6 +626,99 @@ class Store {
       .toFixed(0)
 
     metapoolContract.methods.exchange_underlying(from.index, to.index, amountToSend, receive).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+    .on('transactionHash', function(hash){
+      emitter.emit(SNACKBAR_TRANSACTION_HASH, hash)
+      callback(null, hash)
+    })
+    .on('confirmation', function(confirmationNumber, receipt){
+      if(confirmationNumber === 1) {
+        dispatcher.dispatch({ type: CONFIGURE, content: {} })
+      }
+    })
+    .on('receipt', function(receipt){
+    })
+    .on('error', function(error) {
+      if(error.message) {
+        return callback(error.message)
+      }
+      callback(error)
+    })
+  }
+
+  getAssetInfo = async (payload) => {
+    try {
+      const { address } = payload.content
+      const account = store.getStore('account')
+      const web3 = await this._getWeb3Provider()
+
+      const erc20Contract = new web3.eth.Contract(config.erc20ABI, address)
+
+      const symbol = await erc20Contract.methods.symbol().call()
+      const decimals = parseInt(await erc20Contract.methods.decimals().call())
+      const name = await erc20Contract.methods.name().call()
+
+      let balance = await erc20Contract.methods.balanceOf(account.address).call()
+      const bnDecimals = new BigNumber(10)
+        .pow(decimals)
+
+      balance = new BigNumber(balance)
+        .dividedBy(bnDecimals)
+        .toFixed(decimals, BigNumber.ROUND_DOWN)
+
+      const returnObj = {
+        address: address,
+        symbol: symbol,
+        decimals: decimals,
+        name: name,
+        balance: parseFloat(balance)
+      }
+
+      emitter.emit(GET_ASSET_INFO_RETURNED, returnObj)
+    } catch(ex) {
+      console.log(ex)
+      emitter.emit(ERROR, ex)
+      emitter.emit(SNACKBAR_ERROR, ex)
+    }
+  }
+
+  addPool = async (payload) => {
+    try {
+      const { basePool, address,  name, symbol, a, fee } = payload.content
+      const account = store.getStore('account')
+      const web3 = await this._getWeb3Provider()
+
+      this._callDeployMetapool(web3, account, basePool, address, name, symbol, a, fee, (err, a) => {
+        if(err) {
+          emitter.emit(ERROR, err)
+          return emitter.emit(SNACKBAR_ERROR, err)
+        }
+
+        emitter.emit(ADD_POOL_RETURNED)
+      })
+
+    } catch (ex) {
+      emitter.emit(ERROR, ex)
+      emitter.emit(SNACKBAR_ERROR, ex)
+    }
+  }
+
+  _callDeployMetapool = async (web3, account, basePool, address, name, symbol, a, fee, callback) => {
+    const curveFactoryContract = new web3.eth.Contract(config.curveFactoryABI, config.curveFactoryAddress)
+
+    const decimals = new BigNumber(10)
+      .pow(18)
+
+    const feeSend = new BigNumber(fee)
+      .times(decimals)
+      .toFixed(0)
+
+    const aSend = new BigNumber(100)
+      .times(decimals)
+      .toFixed(0)
+
+    console.log(basePool.erc20address, name, symbol, address, aSend, feeSend)
+
+    curveFactoryContract.methods.deploy_metapool(basePool.erc20address, name, symbol, address, aSend, feeSend).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
     .on('transactionHash', function(hash){
       emitter.emit(SNACKBAR_TRANSACTION_HASH, hash)
       callback(null, hash)

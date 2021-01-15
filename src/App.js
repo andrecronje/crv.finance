@@ -16,6 +16,7 @@ import SnackbarController from './components/snackbar';
 import Account from './components/account';
 import Swap from './components/swap';
 import Liquidity from './components/liquidity';
+import AddPool from './components/addPool';
 
 import { injected } from "./stores/connectors";
 
@@ -106,6 +107,9 @@ class App extends Component {
                 </Route>
                 <Route path="/swap">
                   <Swap />
+                </Route>
+                <Route path="/add">
+                  <AddPool />
                 </Route>
                 <Route path="/">
                   <Swap />
