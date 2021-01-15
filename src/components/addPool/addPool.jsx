@@ -268,7 +268,7 @@ class AddPool extends Component {
       symbolError: false,
       a: '100',
       aError: false,
-      fee: '0.5',
+      fee: '4000000',
       feeError: false,
       loading: !(pools && pools.length > 0 && pools[0].assets.length > 0),
     }
@@ -335,8 +335,6 @@ class AddPool extends Component {
           <Typography variant='h2' align='center' className={ classes.poolInfoHeader }>Setup</Typography>
           { this.renderInput('name') }
           { this.renderInput('symbol') }
-          { this.renderInput('a') }
-          { this.renderInput('fee') }
           { this.renderAddressInput() }
           { this.renderBasePoolSelect() }
           { this.renderAssetInfo() }
@@ -478,6 +476,10 @@ class AddPool extends Component {
       <Typography variant='h3'>{ a }</Typography>
       <Typography variant='h4' className={ classes.gray }>a</Typography>
     </div>
+    <div className={ classes.assetField }>
+      <Typography variant='h3'>{ fee }%</Typography>
+      <Typography variant='h4' className={ classes.gray }>fee</Typography>
+    </div>
     */
 
     return (
@@ -491,10 +493,6 @@ class AddPool extends Component {
           <div className={ classes.assetField }>
             <Typography variant='h3'>{ symbol }</Typography>
             <Typography variant='h4' className={ classes.gray }>symbol</Typography>
-          </div>
-          <div className={ classes.assetField }>
-            <Typography variant='h3'>{ fee }%</Typography>
-            <Typography variant='h4' className={ classes.gray }>fee</Typography>
           </div>
 
           <div className={ classes.sepperator }></div>

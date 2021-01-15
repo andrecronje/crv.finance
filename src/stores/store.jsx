@@ -717,20 +717,7 @@ class Store {
   _callDeployMetapool = async (web3, account, basePool, address, name, symbol, a, fee, callback) => {
     const curveFactoryContract = new web3.eth.Contract(config.curveFactoryABI, config.curveFactoryAddress)
 
-    const decimals = new BigNumber(10)
-      .pow(18)
-
-    const feeSend = new BigNumber(fee)
-      .times(decimals)
-      .toFixed(0)
-
-    const aSend = new BigNumber(100)
-      .times(decimals)
-      .toFixed(0)
-
-    console.log(basePool.erc20address, name, symbol, address, aSend, feeSend)
-
-    curveFactoryContract.methods.deploy_metapool(basePool.erc20address, name, symbol, address, aSend, feeSend).send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
+    curveFactoryContract.methods.deploy_metapool(basePool.erc20address, name, symbol, address, '10', '4000000').send({ from: account.address, gasPrice: web3.utils.toWei(await this._getGasPrice(), 'gwei') })
     .on('transactionHash', function(hash){
       emitter.emit(SNACKBAR_TRANSACTION_HASH, hash)
       callback(null, hash)
