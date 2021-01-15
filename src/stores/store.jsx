@@ -17,8 +17,13 @@ import {
 
   DEPOSIT,
   DEPOSIT_RETURNED,
+  GET_DEPOSIT_AMOUNT,
+  GET_DEPOSIT_AMOUNT_RETURNED,
+
   WITHDRAW,
   WITHDRAW_RETURNED,
+  GET_WITHDRAW_AMOUNT,
+  GET_WITHDRAW_AMOUNT_RETURNED,
 
   SWAP,
   SWAP_RETURNED,
@@ -182,6 +187,12 @@ class Store {
             break
           case ADD_POOL:
             this.addPool(payload)
+            break
+          case GET_DEPOSIT_AMOUNT:
+            this.getDepositAmount(payload)
+            break;
+          case GET_WITHDRAW_AMOUNT:
+            this.getWithdrawAmount(payload)
             break;
           default: {
           }
@@ -735,6 +746,44 @@ class Store {
       }
       callback(error)
     })
+  }
+
+  getDepositAmount = async (payload) => {
+    try {
+      const { pool, amounts } = payload.content
+      const web3 = await this._getWeb3Provider()
+
+      const amountsBN = amounts.map((amount, index) => {
+        let amountToSend = web3.utils.toWei(amount, "ether")
+        if (pool.assets[index].decimals !== 18) {
+          const decimals = new BigNumber(10)
+            .pow(pool.assets[index].decimals)
+
+          amountToSend = new BigNumber(amount)
+            .times(decimals)
+            .toFixed(0)
+        }
+
+        return amountToSend
+      })
+
+      const metapoolContract = new web3.eth.Contract(pool.liquidityABI, pool.liquidityAddress)
+      const amountToReceive = await metapoolContract.methods.calc_token_amount(pool.address, amountsBN, true).call()
+
+      const decimals = 18
+      const bnDecimals = new BigNumber(10)
+        .pow(decimals)
+
+      const receive = new BigNumber(amountToReceive)
+        .dividedBy(bnDecimals)
+        .toFixed(decimals, BigNumber.ROUND_DOWN)
+
+      emitter.emit(GET_DEPOSIT_AMOUNT_RETURNED, parseFloat(receive))
+    } catch(ex) {
+      console.log(ex)
+      emitter.emit(ERROR, ex)
+      emitter.emit(SNACKBAR_ERROR, ex)
+    }
   }
 
   _getGasPrice = async () => {

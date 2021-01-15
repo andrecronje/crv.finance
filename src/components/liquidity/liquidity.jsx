@@ -21,6 +21,10 @@ import {
   DEPOSIT_RETURNED,
   WITHDRAW,
   WITHDRAW_RETURNED,
+  GET_DEPOSIT_AMOUNT,
+  GET_DEPOSIT_AMOUNT_RETURNED,
+  GET_WITHDRAW_AMOUNT,
+  GET_WITHDRAW_AMOUNT_RETURNED,
 } from '../../constants'
 
 import Store from "../../stores";
@@ -165,6 +169,9 @@ const styles = theme => ({
     paddingLeft: '12px'
   },
   assetSelectRoot: {
+  },
+  space: {
+    height: '24px'
   }
 });
 
@@ -198,6 +205,8 @@ class Liquidity extends Component {
     emitter.on(CONFIGURE_RETURNED, this.configureReturned);
     emitter.on(DEPOSIT_RETURNED, this.depositReturned);
     emitter.on(WITHDRAW_RETURNED, this.withdrawReturned);
+    emitter.on(GET_DEPOSIT_AMOUNT_RETURNED, this.getDepositAmountReturned);
+    emitter.on(GET_WITHDRAW_AMOUNT_RETURNED, this.getWithdrawAmountReturned);
   }
 
   componentWillUnmount() {
@@ -206,6 +215,8 @@ class Liquidity extends Component {
     emitter.removeListener(CONFIGURE_RETURNED, this.configureReturned);
     emitter.removeListener(DEPOSIT_RETURNED, this.depositReturned);
     emitter.removeListener(WITHDRAW_RETURNED, this.withdrawReturned);
+    emitter.removeListener(GET_DEPOSIT_AMOUNT_RETURNED, this.getDepositAmountReturned);
+    emitter.removeListener(GET_WITHDRAW_AMOUNT_RETURNED, this.getWithdrawAmountReturned);
   };
 
   configureReturned = () => {
@@ -223,14 +234,37 @@ class Liquidity extends Component {
 
     const val = []
 
+    if(!selectedPool) {
+      return
+    }
+
     for(let i = 0; i < selectedPool.assets.length; i++) {
       val[selectedPool.assets[i].symbol+'Amount'] = selectedPool.assets[i].balance.toFixed(selectedPool.assets[i].decimals)
     }
 
     this.setState(val)
 
-    // dispatcher.dispatch({ type: GET_BALANCES, content: {} })
+    let that = this
+
+    window.setTimeout(() => {
+      let amounts = []
+
+      for(let i = 0; i < selectedPool.assets.length; i++) {
+        amounts.push(that.state[selectedPool.assets[i].symbol+'Amount'])
+      }
+
+      dispatcher.dispatch({ type: GET_DEPOSIT_AMOUNT, content: { pool: selectedPool, amounts: amounts }})
+    }, 300)
   };
+
+  getDepositAmountReturned = (val) => {
+    console.log(val)
+    this.setState({ depositAmount: val })
+  }
+
+  getWithdrawAmountReturned = (vals) => {
+    this.setState({ withdrawAmounts: vals })
+  }
 
   balancesReturned = (balances) => {
 
@@ -450,11 +484,14 @@ class Liquidity extends Component {
     return (
       <React.Fragment>
         { this.renderPoolSelect() }
+        <div className={ classes.space }></div>
         {
           selectedPool && selectedPool.assets && selectedPool.assets.length > 0 && selectedPool.assets.map((p) => {
             return this.renderAssetInput(p, 'deposit')
           })
         }
+        <div className={ classes.space }></div>
+        { this.renderDepositAmount() }
         <Button
           className={ classes.actionButton }
           variant="outlined"
@@ -466,6 +503,51 @@ class Liquidity extends Component {
           <Typography className={ classes.buttonText } variant={ 'h4'} color='secondary'>{ 'Deposit' }</Typography>
         </Button>
       </React.Fragment>
+    )
+  }
+
+  renderDepositAmount = () => {
+    const {
+      classes
+    } = this.props
+
+    const {
+      depositAmount,
+      selectedPool
+    } = this.state
+
+    return (
+      <div className={ classes.valContainer }>
+        <div className={ classes.flexy }>
+          <div className={ classes.label }>
+            <Typography variant='h4'>
+              Receive
+            </Typography>
+          </div>
+          <div className={ classes.balances }>
+          </div>
+        </div>
+        <div>
+          <TextField
+            fullWidth
+            disabled={ true }
+            className={ classes.actionInput }
+            id={ "depositAmount" }
+            value={ depositAmount }
+            placeholder="0.00"
+            variant="outlined"
+            InputProps={{
+              startAdornment: <div className={ classes.assetSelectIcon }>
+                <img
+                  alt=""
+                  src={ this.getLogoForAsset(selectedPool) }
+                  height="30px"
+                />
+              </div>,
+            }}
+          />
+        </div>
+      </div>
     )
   }
 
@@ -577,6 +659,30 @@ class Liquidity extends Component {
     let val = []
     val[event.target.id] = event.target.value
     this.setState(val)
+
+    const {
+      selectedPool
+    } = this.state
+
+    let amounts = []
+
+    for(let i = 0; i < selectedPool.assets.length; i++) {
+
+      let am = '0'
+      if(event.target.id === selectedPool.assets[i].symbol+'Amount') {
+        am = event.target.value
+      } else {
+        am = this.state[selectedPool.assets[i].symbol+'Amount']
+      }
+
+      if(am !== '' && !isNaN(am)) {
+        amounts.push(am)
+      } else {
+        amounts.push('0')
+      }
+    }
+
+    dispatcher.dispatch({ type: GET_DEPOSIT_AMOUNT, content: { pool: selectedPool, amounts: amounts }})
   }
 
   setAmount = (id, type, balance) => {
