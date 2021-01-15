@@ -541,18 +541,6 @@ class Swap extends Component {
 
     const value = event.target.value
 
-    if(event.target.name === 'fromAsset') {
-      this.setState({ toAsset: selectedPool.assets.filter((asset) => {
-          return asset.symbol !== value
-        })[0].symbol
-      })
-    } else {
-      this.setState({ fromAsset: selectedPool.assets.filter((asset) => {
-          return asset.symbol !== value
-        })[0].symbol
-      })
-    }
-
     const that = this
 
     window.setTimeout(() => {
