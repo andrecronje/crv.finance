@@ -102,7 +102,7 @@ class App extends Component {
               <Header />
               <Disclaimer />
               <Switch>
-                <Route path='/liquidty'>
+                <Route path='/liquidity'>
                   <Liquidity />
                 </Route>
                 <Route path="/swap">
