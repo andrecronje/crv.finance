@@ -1,6 +1,7 @@
-import config from "../config"
+import config from '../config'
 import async from 'async'
 import BigNumber from 'bignumber.js'
+import { bnToFixed, multiplyBnToFixed, sumArray } from '../utils/numbers'
 
 import {
   MAX_UINT256,
@@ -19,6 +20,7 @@ import {
   DEPOSIT_RETURNED,
   GET_DEPOSIT_AMOUNT,
   GET_DEPOSIT_AMOUNT_RETURNED,
+  SLIPPAGE_INFO_RETURNED,
 
   WITHDRAW,
   WITHDRAW_RETURNED,
@@ -767,18 +769,28 @@ class Store {
         return amountToSend
       })
 
-      const metapoolContract = new web3.eth.Contract(pool.liquidityABI, pool.liquidityAddress)
-      const amountToReceive = await metapoolContract.methods.calc_token_amount(pool.address, amountsBN, true).call()
+      const zapContract = new web3.eth.Contract(pool.liquidityABI, pool.liquidityAddress)
+      const poolContract = new web3.eth.Contract(config.metapoolABI, pool.address)
 
-      const decimals = 18
-      const bnDecimals = new BigNumber(10)
-        .pow(decimals)
+      const [receiveAmountBn, virtPriceBn] = await Promise.all([
+        zapContract.methods.calc_token_amount(pool.address, amountsBN, true).call(),
+        poolContract.methods.get_virtual_price().call(),
+      ])
 
-      const receive = new BigNumber(amountToReceive)
-        .dividedBy(bnDecimals)
-        .toFixed(decimals, BigNumber.ROUND_DOWN)
+      const receiveAmount = bnToFixed(receiveAmountBn, 18)
+      let slippage;
 
-      emitter.emit(GET_DEPOSIT_AMOUNT_RETURNED, parseFloat(receive))
+      if (Number(receiveAmount)) {
+        const virtualValue = multiplyBnToFixed(virtPriceBn, receiveAmountBn, 18)
+        const realValue = sumArray(amounts) // Assuming each component is at peg
+
+        slippage = (virtualValue / realValue) - 1;
+      }
+
+      emitter.emit(GET_DEPOSIT_AMOUNT_RETURNED, parseFloat(receiveAmount))
+      emitter.emit(SLIPPAGE_INFO_RETURNED, {
+        slippagePcent: typeof slippage !== 'undefined' ? slippage * 100 : slippage,
+      })
     } catch(ex) {
       console.log(ex)
       emitter.emit(ERROR, ex)
