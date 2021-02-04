@@ -586,11 +586,13 @@ class Store {
       const metapoolContract = new web3.eth.Contract(config.metapoolABI, pool.address)
       const amountToReceive = await metapoolContract.methods.get_dy_underlying(from.index, to.index, amountToSend).call()
 
+      const receiveAmount = amountToReceive/10**to.decimals
+
       const returnObj = {
         sendAmount: amount,
-        receiveAmount: amountToReceive/10**to.decimals,
-        receivePerSend: (amountToReceive*10**to.decimals)/(amountToSend*10**from.decimals),
-        sendPerReceive: (amountToSend*10**from.decimals)/(amountToReceive*10**to.decimals),
+        receiveAmount,
+        receivePerSend: receiveAmount / amount,
+        sendPerReceive: amount / receiveAmount,
       }
 
       emitter.emit(SWAP_AMOUNT_RETURNED, returnObj)

@@ -628,6 +628,7 @@ class Liquidity extends Component {
             onChange={ this.onChange }
             placeholder="0.00"
             variant="outlined"
+            type="number"
             InputProps={{
               startAdornment: <div className={ classes.assetSelectIcon }>
                 <img
