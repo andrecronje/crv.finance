@@ -6,11 +6,11 @@ import {
   TextField,
   MenuItem,
   Button,
-  CircularProgress
 } from '@material-ui/core';
 import { colors } from '../../theme'
 
 import Loader from '../loader'
+import SlippageInfo from '../slippageInfo'
 
 import {
   ERROR,
@@ -25,6 +25,7 @@ import {
   GET_DEPOSIT_AMOUNT_RETURNED,
   GET_WITHDRAW_AMOUNT,
   GET_WITHDRAW_AMOUNT_RETURNED,
+  SLIPPAGE_INFO_RETURNED,
 } from '../../constants'
 
 import Store from "../../stores";
@@ -207,6 +208,7 @@ class Liquidity extends Component {
     emitter.on(WITHDRAW_RETURNED, this.withdrawReturned);
     emitter.on(GET_DEPOSIT_AMOUNT_RETURNED, this.getDepositAmountReturned);
     emitter.on(GET_WITHDRAW_AMOUNT_RETURNED, this.getWithdrawAmountReturned);
+    emitter.on(SLIPPAGE_INFO_RETURNED, this.slippageInfoReturned);
   }
 
   componentWillUnmount() {
@@ -217,10 +219,10 @@ class Liquidity extends Component {
     emitter.removeListener(WITHDRAW_RETURNED, this.withdrawReturned);
     emitter.removeListener(GET_DEPOSIT_AMOUNT_RETURNED, this.getDepositAmountReturned);
     emitter.removeListener(GET_WITHDRAW_AMOUNT_RETURNED, this.getWithdrawAmountReturned);
+    emitter.removeListener(SLIPPAGE_INFO_RETURNED, this.slippageInfoReturned);
   };
 
   configureReturned = () => {
-
     const pools = store.getStore('pools')
     const selectedPool = pools && pools.length > 0 ? pools[0] : null
 
@@ -246,6 +248,8 @@ class Liquidity extends Component {
 
     let that = this
 
+    // Note: This hardcoded delay doesn't seem to be causing issues, but let's hook things
+    // together more sturdily if it turns out it does
     window.setTimeout(() => {
       let amounts = []
 
@@ -267,7 +271,6 @@ class Liquidity extends Component {
   }
 
   balancesReturned = (balances) => {
-
     const pools = store.getStore('pools')
 
     this.setState({
@@ -275,6 +278,10 @@ class Liquidity extends Component {
       pool: pools && pools.length > 0 ? pools[0].symbol : '',
     })
   };
+
+  slippageInfoReturned = ({ slippagePcent }) => {
+    this.setState({ slippagePcent })
+  }
 
   depositReturned = () => {
     this.setState({ loading: false })
@@ -513,6 +520,7 @@ class Liquidity extends Component {
 
     const {
       depositAmount,
+      slippagePcent,
       selectedPool
     } = this.state
 
@@ -536,6 +544,7 @@ class Liquidity extends Component {
             value={ depositAmount }
             placeholder="0.00"
             variant="outlined"
+            type="number"
             InputProps={{
               startAdornment: <div className={ classes.assetSelectIcon }>
                 <img
@@ -548,6 +557,7 @@ class Liquidity extends Component {
             }}
           />
         </div>
+        <SlippageInfo slippagePcent={slippagePcent} />
       </div>
     )
   }
@@ -618,6 +628,7 @@ class Liquidity extends Component {
             onChange={ this.onChange }
             placeholder="0.00"
             variant="outlined"
+            type="number"
             InputProps={{
               startAdornment: <div className={ classes.assetSelectIcon }>
                 <img

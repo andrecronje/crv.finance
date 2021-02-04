@@ -10,6 +10,7 @@ import {
 import { colors } from '../../theme'
 
 import Loader from '../loader'
+import RateInfo from '../rateInfo'
 
 import {
   ERROR,
@@ -214,6 +215,8 @@ class Swap extends Component {
       fromAmount: '',
       fromAmountError: false,
       toAmount: '',
+      receivePerSend: '',
+      sendPerReceive: '',
       loading: !(pools && pools.length > 0 && pools[0].assets.length > 0),
       calculatedSwapAmount: null,
     }
@@ -276,7 +279,9 @@ class Swap extends Component {
     if(amount.sendAmount === this.state.fromAmount) {
       this.setState({
         calculatedSwapAmount: amount,
-        toAmount: amount.receiveAmount
+        toAmount: amount.receiveAmount,
+        receivePerSend: amount.receivePerSend,
+        sendPerReceive: amount.sendPerReceive,
       })
     }
   }
@@ -285,7 +290,9 @@ class Swap extends Component {
     this.setState({
       loading: false,
       fromAmount: '',
-      toAmount: ''
+      toAmount: '',
+      receivePerSend: '',
+      sendPerReceive: '',
     })
   }
 
@@ -299,7 +306,11 @@ class Swap extends Component {
       loading,
       account,
       activeTab,
-      fromAmount
+      fromAsset,
+      toAsset,
+      fromAmount,
+      receivePerSend,
+      sendPerReceive,
     } = this.state
 
     if(!account || !account.address) {
@@ -312,6 +323,12 @@ class Swap extends Component {
           { this.renderPoolSelect() }
           { this.renderAssetInput('from') }
           { this.renderAssetInput('to') }
+          <RateInfo
+            fromAsset={fromAsset}
+            toAsset={toAsset}
+            receivePerSend={receivePerSend}
+            sendPerReceive={sendPerReceive}
+          />
           <Button
             className={ classes.actionButton }
             variant="outlined"
@@ -431,6 +448,7 @@ class Swap extends Component {
             onChange={ this.onChange }
             placeholder="0.00"
             variant="outlined"
+            type="number"
             InputProps={{
               endAdornment: <div className={ classes.assetContainer }>{ this.renderAssetSelect(type+"Asset") }</div>,
             }}
@@ -581,7 +599,11 @@ class Swap extends Component {
     })[0]
 
     if(fromAmount === '' || fromAmount === '0') {
-      this.setState({ toAmount: '' })
+      this.setState({
+        toAmount: '',
+        receivePerSend: '',
+        sendPerReceive: '',
+      })
       return
     }
 
