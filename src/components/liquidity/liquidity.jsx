@@ -472,7 +472,7 @@ class Liquidity extends Component {
             />
           </div>
           <div className={ classes.assetSelectIconName }>
-            <Typography variant='h4'>{ option.symbol }</Typography>
+            <Typography variant='h4'>{ option.name }</Typography>
           </div>
         </React.Fragment>
       </MenuItem>
