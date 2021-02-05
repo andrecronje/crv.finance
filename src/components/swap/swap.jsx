@@ -11,6 +11,7 @@ import { colors } from '../../theme'
 
 import Loader from '../loader'
 import RateInfo from '../rateInfo'
+import UnderlyingAssetsInfo from './underlyingAssetsInfo'
 
 import {
   ERROR,
@@ -346,7 +347,7 @@ class Swap extends Component {
   };
 
   renderPoolSelect = () => {
-    const { loading, pools, pool } = this.state
+    const { loading, pools, pool, selectedPool } = this.state
     const { classes } = this.props
 
     return (
@@ -384,6 +385,7 @@ class Swap extends Component {
             { pools ? pools.map((pool) => { return this.renderPoolOption(pool) }) : null }
           </TextField>
         </div>
+        <UnderlyingAssetsInfo selectedPool={selectedPool} />
       </div>
     )
   }
