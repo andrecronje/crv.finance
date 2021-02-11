@@ -343,6 +343,9 @@ class Store {
         .toFixed(decimals, BigNumber.ROUND_DOWN)
 
       const curveFactoryContract = new web3.eth.Contract(config.curveFactoryABI, config.curveFactoryAddress)
+      const poolBalances = await curveFactoryContract.methods.get_balances(pool).call()
+      const isPoolSeeded = sumArray(poolBalances) !== 0
+
       let coins = await curveFactoryContract.methods.get_underlying_coins(pool).call()
 
       let filteredCoins = coins.filter((coin) => {
@@ -418,6 +421,7 @@ class Store {
           decimals: decimals,
           name: name,
           balance: parseFloat(balance),
+          isPoolSeeded,
           id: symbol,
           assets: assets
         })

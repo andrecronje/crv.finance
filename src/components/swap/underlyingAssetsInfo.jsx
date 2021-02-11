@@ -27,7 +27,7 @@ const UnderlyingAssetsInfo = ({
   return (
     <div className={classes.info}>
       Swap between{' '}
-      <a href={`https://etherscan.io/address/${firstAsset.erc20address}`} target="_blank" rel="noopener noreferrer" className={classes.link}>{firstAsset.symbol}</a>/
+      <a href={`https://etherscan.io/token/${firstAsset.erc20address}`} target="_blank" rel="noopener noreferrer" className={classes.link}>{firstAsset.symbol}</a>/
       {metaPoolAssets.map(({ symbol }) => symbol).join('/')}
     </div>
   )

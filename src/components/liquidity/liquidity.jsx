@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { withRouter } from "react-router-dom";
 import { withStyles } from '@material-ui/core/styles';
+import PoolSeedingCTA from '../poolSeedingCTA'
 import {
   Typography,
   TextField,
@@ -183,7 +184,15 @@ class Liquidity extends Component {
 
     const account = store.getStore('account')
     const pools = store.getStore('pools')
-    const selectedPool = pools && pools.length > 0 ? pools[0] : null
+
+    const preSelectedPoolMatches = window.location.hash.match(/pool=([a-z0-9/-]+)/i);
+    const preSelectedPool = preSelectedPoolMatches === null ? null : preSelectedPoolMatches[1];
+
+    const selectedPool = (
+      !pools || pools.length === 0 ? null :
+      preSelectedPool !== null ? pools.find(({ id }) => id === preSelectedPool) :
+      pools[0]
+    );
 
     this.state = {
       account: account,
@@ -225,41 +234,53 @@ class Liquidity extends Component {
   configureReturned = () => {
     const pools = store.getStore('pools')
     const selectedPool = pools && pools.length > 0 ? pools[0] : null
-
-    this.setState({
+    const newStateSlice = {
       account: store.getStore('account'),
       pools: pools,
       pool: selectedPool ? selectedPool.symbol : '',
-      selectedPool: selectedPool,
+      selectedPool,
       loading: false,
-    })
+      ...this.getStateSliceUserBalancesForSelectedPool(selectedPool),
+    };
 
-    const val = []
+    this.setState(newStateSlice);
 
-    if(!selectedPool) {
-      return
-    }
+    if (!selectedPool) return;
 
-    for(let i = 0; i < selectedPool.assets.length; i++) {
-      val[selectedPool.assets[i].symbol+'Amount'] = selectedPool.assets[i].balance.toFixed(selectedPool.assets[i].decimals)
-    }
-
-    this.setState(val)
-
-    let that = this
-
-    // Note: This hardcoded delay doesn't seem to be causing issues, but let's hook things
-    // together more sturdily if it turns out it does
-    window.setTimeout(() => {
-      let amounts = []
-
-      for(let i = 0; i < selectedPool.assets.length; i++) {
-        amounts.push(that.state[selectedPool.assets[i].symbol+'Amount'])
-      }
-
-      dispatcher.dispatch({ type: GET_DEPOSIT_AMOUNT, content: { pool: selectedPool, amounts: amounts }})
-    }, 300)
+    this.getDepositAmount(newStateSlice);
   };
+
+  // Returns hash map of user balances for selected pool, e.g. { BACAmount: '2.00', USDTAmount: '3.00', … }
+  getStateSliceUserBalancesForSelectedPool = (selectedPool) => {
+    if (!selectedPool) return {}
+
+    // Todo: don't use tofixed() anymore, it rounds up and might lead to failed txs
+    return Object.assign({}, ...selectedPool.assets.map(({ symbol, balance, decimals }) => ({
+      [`${symbol}Amount`]: balance.toFixed(decimals)
+    })))
+  }
+
+  getDepositAmount = (newStateSlice = {}) => {
+    const futureState = {
+      ...this.state,
+      ...newStateSlice,
+    };
+
+    const { selectedPool } = futureState;
+    if (!selectedPool) return;
+
+    this.setState({
+      depositAmount: '',
+    });
+
+    if (!selectedPool.isPoolSeeded) return;
+
+    const amounts = selectedPool.assets
+      .map(({ symbol }) => futureState[`${symbol}Amount`]) // Gather balances for that pool from state
+      .map((amount) => (amount === '' || isNaN(amount)) ? 0 : amount) // Sanitize
+
+    dispatcher.dispatch({ type: GET_DEPOSIT_AMOUNT, content: { pool: selectedPool, amounts }})
+  }
 
   getDepositAmountReturned = (val) => {
     console.log(val)
@@ -347,7 +368,7 @@ class Liquidity extends Component {
             <Typography variant='h4'>pool</Typography>
           </div>
           <div className={ classes.balances }>
-            { (selectedPool ? (<Typography variant='h4' onClick={ () => { this.setAmount(selectedPool.symbol, 'pool', (selectedPool ? selectedPool.balance.toFixed(selectedPool.decimals) : '0')) } } className={ classes.value } noWrap>{ ''+ ( selectedPool && selectedPool.balance ? (Math.floor(selectedPool.balance*10000)/10000).toFixed(4) : '0.0000') } { selectedPool ? selectedPool.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
+            { (selectedPool ? (<Typography variant='h4' onClick={ () => { this.setAmount('pool', (selectedPool ? selectedPool.balance.toFixed(selectedPool.decimals) : '0')) } } className={ classes.value } noWrap>{ ''+ ( selectedPool && selectedPool.balance ? (Math.floor(selectedPool.balance*10000)/10000).toFixed(4) : '0.0000') } { selectedPool ? selectedPool.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
           </div>
         </div>
         <div>
@@ -491,6 +512,8 @@ class Liquidity extends Component {
     return (
       <React.Fragment>
         { this.renderPoolSelect() }
+        {(selectedPool && !selectedPool.isPoolSeeded) &&
+          <PoolSeedingCTA pool={selectedPool} isDepositForm />}
         <div className={ classes.space }></div>
         {
           selectedPool && selectedPool.assets && selectedPool.assets.length > 0 && selectedPool.assets.map((p) => {
@@ -523,6 +546,8 @@ class Liquidity extends Component {
       slippagePcent,
       selectedPool
     } = this.state
+
+    if (selectedPool && !selectedPool.isPoolSeeded) return null;
 
     return (
       <div className={ classes.valContainer }>
@@ -614,7 +639,7 @@ class Liquidity extends Component {
             </Typography>
           </div>
           <div className={ classes.balances }>
-            { (asset ? (<Typography variant='h4' onClick={ () => { if(DorW === 'withdraw') { return false; } this.setAmount(asset.id, type, (asset ? asset.balance.toFixed(asset.decimals) : '0')) } } className={ classes.value } noWrap>{ ''+ ( asset && asset.balance ? (Math.floor(asset.balance*10000)/10000).toFixed(4) : '0.0000') } { asset ? asset.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
+            { (asset ? (<Typography variant='h4' onClick={ () => { if(DorW === 'withdraw') { return false; } this.setAmount(type, (asset ? asset.balance.toFixed(asset.decimals) : '0')) } } className={ classes.value } noWrap>{ ''+ ( asset && asset.balance ? (Math.floor(asset.balance*10000)/10000).toFixed(4) : '0.0000') } { asset ? asset.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
           </div>
         </div>
         <div>
@@ -653,78 +678,42 @@ class Liquidity extends Component {
   }
 
   onPoolSelectChange = (event) => {
-    const thePool = this.state.pools.filter((pool) => {
+    const selectedPool = this.state.pools.find((pool) => {
       return pool.id === event.target.value
     })
 
-    const val = []
-    val[event.target.name] = event.target.value
-    val['selectedPool'] = thePool[0]
-    val[thePool[0].assets[0].symbol+'Amount'] = thePool[0].assets[0].balance.toFixed(thePool[0].assets[0].decimals)
-    val[thePool[0].assets[1].symbol+'Amount'] = thePool[0].assets[1].balance.toFixed(thePool[0].assets[1].decimals)
-    this.setState(val)
+    const newStateSlice = {
+      [event.target.name]: event.target.value,
+      selectedPool,
+      ...this.getStateSliceUserBalancesForSelectedPool(selectedPool),
+    };
 
-    this.setState(val)
+    this.setState(newStateSlice);
+    this.getDepositAmount(newStateSlice);
+
+    // If an url fragment was used to auto-select a pool, remove that
+    // fragment when we change pool to revert to the naked /liquidity url.
+    if (this.props.history.location.hash !== '') {
+      this.props.history.replace('/liquidity');
+    }
   }
 
   onChange = (event) => {
-    let val = []
-    val[event.target.id] = event.target.value
-    this.setState(val)
-
-    const {
-      selectedPool
-    } = this.state
-
-    let amounts = []
-
-    for(let i = 0; i < selectedPool.assets.length; i++) {
-
-      let am = '0'
-      if(event.target.id === selectedPool.assets[i].symbol+'Amount') {
-        am = event.target.value
-      } else {
-        am = this.state[selectedPool.assets[i].symbol+'Amount']
-      }
-
-      if(am !== '' && !isNaN(am)) {
-        amounts.push(am)
-      } else {
-        amounts.push('0')
-      }
+    const newStateSlice = {
+      [event.target.id]: event.target.value
     }
 
-    dispatcher.dispatch({ type: GET_DEPOSIT_AMOUNT, content: { pool: selectedPool, amounts: amounts }})
+    this.setState(newStateSlice);
+    this.getDepositAmount(newStateSlice);
   }
 
-  setAmount = (id, type, balance) => {
-    let val = []
-    val[type+"Amount"] = balance
-    this.setState(val)
+  setAmount = (symbol, balance) => {
+    const newStateSlice = {
+      [`${symbol}Amount`]: balance,
+    };
 
-    const {
-      selectedPool
-    } = this.state
-
-    let amounts = []
-
-    for(let i = 0; i < selectedPool.assets.length; i++) {
-
-      let am = '0'
-      if(type+"Amount" === selectedPool.assets[i].symbol+'Amount') {
-        am = balance
-      } else {
-        am = this.state[selectedPool.assets[i].symbol+'Amount']
-      }
-
-      if(am !== '' && !isNaN(am)) {
-        amounts.push(am)
-      } else {
-        amounts.push('0')
-      }
-    }
-
-    dispatcher.dispatch({ type: GET_DEPOSIT_AMOUNT, content: { pool: selectedPool, amounts: amounts }})
+    this.setState(newStateSlice);
+    this.getDepositAmount(newStateSlice);
   }
 
   toggleDeposit = () => {
