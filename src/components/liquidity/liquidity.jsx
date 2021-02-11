@@ -12,6 +12,7 @@ import { colors } from '../../theme'
 
 import Loader from '../loader'
 import SlippageInfo from '../slippageInfo'
+import { floatToFixed } from '../../utils/numbers'
 
 import {
   ERROR,
@@ -254,9 +255,8 @@ class Liquidity extends Component {
   getStateSliceUserBalancesForSelectedPool = (selectedPool) => {
     if (!selectedPool) return {}
 
-    // Todo: don't use tofixed() anymore, it rounds up and might lead to failed txs
     return Object.assign({}, ...selectedPool.assets.map(({ symbol, balance, decimals }) => ({
-      [`${symbol}Amount`]: balance.toFixed(decimals)
+      [`${symbol}Amount`]: floatToFixed(balance, decimals)
     })))
   }
 
@@ -368,7 +368,7 @@ class Liquidity extends Component {
             <Typography variant='h4'>pool</Typography>
           </div>
           <div className={ classes.balances }>
-            { (selectedPool ? (<Typography variant='h4' onClick={ () => { this.setAmount('pool', (selectedPool ? selectedPool.balance.toFixed(selectedPool.decimals) : '0')) } } className={ classes.value } noWrap>{ ''+ ( selectedPool && selectedPool.balance ? (Math.floor(selectedPool.balance*10000)/10000).toFixed(4) : '0.0000') } { selectedPool ? selectedPool.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
+            { (selectedPool ? (<Typography variant='h4' onClick={ () => { this.setAmount('pool', (selectedPool ? floatToFixed(selectedPool.balance, selectedPool.decimals) : '0')) } } className={ classes.value } noWrap>{ ''+ ( selectedPool && selectedPool.balance ? floatToFixed(selectedPool.balance, 4) : '0.0000') } { selectedPool ? selectedPool.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
           </div>
         </div>
         <div>
@@ -639,7 +639,7 @@ class Liquidity extends Component {
             </Typography>
           </div>
           <div className={ classes.balances }>
-            { (asset ? (<Typography variant='h4' onClick={ () => { if(DorW === 'withdraw') { return false; } this.setAmount(type, (asset ? asset.balance.toFixed(asset.decimals) : '0')) } } className={ classes.value } noWrap>{ ''+ ( asset && asset.balance ? (Math.floor(asset.balance*10000)/10000).toFixed(4) : '0.0000') } { asset ? asset.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
+            { (asset ? (<Typography variant='h4' onClick={ () => { if(DorW === 'withdraw') { return false; } this.setAmount(type, (asset ? floatToFixed(asset.balance, asset.decimals) : '0')) } } className={ classes.value } noWrap>{ ''+ ( asset && asset.balance ? floatToFixed(asset.balance, 4) : '0.0000') } { asset ? asset.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
           </div>
         </div>
         <div>
@@ -730,8 +730,8 @@ class Liquidity extends Component {
     }
 
     const val = []
-    val[selectedPool.assets[0].symbol+'Amount'] = selectedPool.assets[0].balance.toFixed(selectedPool.assets[0].decimals)
-    val[selectedPool.assets[1].symbol+'Amount'] = selectedPool.assets[1].balance.toFixed(selectedPool.assets[1].decimals)
+    val[selectedPool.assets[0].symbol+'Amount'] = floatToFixed(selectedPool.assets[0].balance, selectedPool.assets[0].decimals)
+    val[selectedPool.assets[1].symbol+'Amount'] = floatToFixed(selectedPool.assets[1].balance, selectedPool.assets[1].decimals)
     this.setState(val)
   }
 

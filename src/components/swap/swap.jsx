@@ -13,6 +13,7 @@ import Loader from '../loader'
 import RateInfo from '../rateInfo'
 import UnderlyingAssetsInfo from './underlyingAssetsInfo'
 import PoolSeedingCTA from '../poolSeedingCTA'
+import { floatToFixed } from '../../utils/numbers'
 
 import {
   ERROR,
@@ -443,7 +444,7 @@ class Swap extends Component {
             <Typography variant='h4'>{ type }</Typography>
           </div>
           <div className={ classes.balances }>
-            { (asset ? (<Typography variant='h4' onClick={ () => { this.setAmount(asset.symbol, type, (asset ? asset.balance.toFixed(asset.decimals) : '0')) } } className={ classes.value } noWrap>{ 'Balance: '+ ( asset && asset.balance ? (Math.floor(asset.balance*10000)/10000).toFixed(4) : '0.0000') } { asset ? asset.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
+            { (asset ? (<Typography variant='h4' onClick={ () => { this.setAmount(asset.symbol, type, (asset ? floatToFixed(asset.balance, asset.decimals) : '0')) } } className={ classes.value } noWrap>{ 'Balance: '+ ( asset && asset.balance ? floatToFixed(asset.balance, 4) : '0.0000') } { asset ? asset.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
           </div>
         </div>
         <div>

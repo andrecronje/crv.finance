@@ -8,6 +8,10 @@ const bnToFixed = (bn, decimals, displayDecimals = decimals) => {
     .toFixed(displayDecimals, BigNumber.ROUND_DOWN)
 };
 
+const floatToFixed = (float, decimals = 0) => (
+  new BigNumber(float).toFixed(decimals, BigNumber.ROUND_DOWN)
+);
+
 // multiplyBnToFixed(bigNumber1, bigNumber2[, bigNumberN], decimals)
 const multiplyBnToFixed = (...args) => {
   if (args.length < 3) throw new Error('multiplyBnToFixed needs at least 3 arguments: first bn, second bn to multiply with first, and number of decimals.')
