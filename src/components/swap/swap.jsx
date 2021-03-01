@@ -7,6 +7,7 @@ import {
   MenuItem,
   Button,
 } from '@material-ui/core';
+import SwapVertIcon from '@material-ui/icons/SwapVert';
 import { colors } from '../../theme'
 
 import Loader from '../loader'
@@ -193,6 +194,37 @@ const styles = theme => ({
   gray: {
     color: colors.darkGray
   },
+  version1: {
+    border: '1px solid '+colors.borderBlue,
+    padding: '6px',
+    width: 'fit-content',
+    borderRadius: '12px',
+    background: 'rgba(25, 101, 233, 0.5)',
+    fontSize: '12px'
+  },
+  version2: {
+    border: '1px solid '+colors.borderBlue,
+    padding: '6px',
+    width: 'fit-content',
+    borderRadius: '12px',
+    background: 'rgba(25, 101, 233, 0.5)',
+    fontSize: '12px'
+  },
+  poolSelectOption: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%'
+  },
+  swapIconContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    width: '100%',
+    marginBottom: '12px'
+  },
+  swapIcon: {
+    cursor: 'pointer'
+  }
 });
 
 class Swap extends Component {
@@ -293,6 +325,19 @@ class Swap extends Component {
     this.setState({ loading: false })
   };
 
+  swapAssets = () => {
+    let val = []
+    val['fromAsset'] = this.state.toAsset
+    val['toAsset'] = this.state.fromAsset
+    this.setState(val)
+
+    const that = this
+
+    window.setTimeout(() => {
+      that._getSwapAmount()
+    }, 100)
+  }
+
   render() {
     const { classes } = this.props;
     const {
@@ -311,6 +356,9 @@ class Swap extends Component {
         <div className={ classes.inputContainer }>
           { this.renderPoolSelect() }
           { this.renderAssetInput('from') }
+          <div className={ classes.swapIconContainer }>
+            <SwapVertIcon className={ classes.swapIcon } onClick={ this.swapAssets }/>
+          </div>
           { this.renderAssetInput('to') }
           <Button
             className={ classes.actionButton }
@@ -376,8 +424,9 @@ class Swap extends Component {
 
     return (
       <MenuItem key={option.id} value={option.symbol} className={ classes.assetSelectMenu }>
-        <div className={ classes.assetSelectIconName }>
+        <div className={ classes.poolSelectOption }>
           <Typography variant='h4'>{ option.name }</Typography>
+          <Typography variant='h5' className={`${ option.version === 1 ? classes.version1 : classes.version2 }`}>version { option.version }</Typography>
         </div>
       </MenuItem>
     )
