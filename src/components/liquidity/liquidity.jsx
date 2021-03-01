@@ -52,7 +52,7 @@ const styles = theme => ({
     justifyContent: 'flex-start',
     margin: '40px 0px',
     border: '1px solid '+colors.borderBlue,
-    minWidth: '500px',
+    width: '500px',
     background: colors.white
   },
   inputCardHeading: {
@@ -74,7 +74,8 @@ const styles = theme => ({
   assetSelectMenu: {
     padding: '15px 15px 15px 20px',
     minWidth: '300px',
-    display: 'flex'
+    display: 'flex',
+    width: '100%'
   },
   assetSelectIcon: {
     display: 'inline-block',
@@ -173,7 +174,34 @@ const styles = theme => ({
   },
   space: {
     height: '24px'
-  }
+  },
+  version1: {
+    border: '1px solid '+colors.borderBlue,
+    padding: '6px',
+    width: 'fit-content',
+    borderRadius: '12px',
+    background: 'rgba(25, 101, 233, 0.5)',
+    fontSize: '12px'
+  },
+  version2: {
+    border: '1px solid '+colors.borderBlue,
+    padding: '6px',
+    width: 'fit-content',
+    borderRadius: '12px',
+    background: 'rgba(25, 101, 233, 0.5)',
+    fontSize: '12px'
+  },
+  poolSelectOption: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    minWidth: '300px',
+    padding: '12px 12px'
+  },
+  gray: {
+    color: colors.darkGray
+  },
 });
 
 class Liquidity extends Component {
@@ -183,7 +211,15 @@ class Liquidity extends Component {
 
     const account = store.getStore('account')
     const pools = store.getStore('pools')
-    const selectedPool = pools && pools.length > 0 ? pools[0] : null
+    let selectedPool = null
+    if(pools && pools.length > 0) {
+      const v2PoolsArr = pools.filter((pool) => {
+        return pool.version === 2
+      })
+      if(v2PoolsArr.length > 0) {
+        selectedPool = v2PoolsArr[0]
+      }
+    }
 
     this.state = {
       account: account,
@@ -224,7 +260,16 @@ class Liquidity extends Component {
 
   configureReturned = () => {
     const pools = store.getStore('pools')
-    const selectedPool = pools && pools.length > 0 ? pools[0] : null
+
+    let selectedPool = null
+    if(pools && pools.length > 0) {
+      const v2PoolsArr = pools.filter((pool) => {
+        return pool.version === 2
+      })
+      if(v2PoolsArr.length > 0) {
+        selectedPool = v2PoolsArr[0]
+      }
+    }
 
     this.setState({
       account: store.getStore('account'),
@@ -262,7 +307,6 @@ class Liquidity extends Component {
   };
 
   getDepositAmountReturned = (val) => {
-    console.log(val)
     this.setState({ depositAmount: val })
   }
 
@@ -383,6 +427,13 @@ class Liquidity extends Component {
         onChange={ this.onPoolSelectChange }
         SelectProps={{
           native: false,
+          renderValue: (option) => {
+            return (
+              <div className={ classes.assetSelectIconName }>
+                <Typography variant='h4'>{ option }</Typography>
+              </div>
+            )
+          }
         }}
         fullWidth
         disabled={ loading }
@@ -398,19 +449,12 @@ class Liquidity extends Component {
     const { classes } = this.props
 
     return (
-      <MenuItem key={option.symbol} value={option.symbol} className={ classes.assetSelectMenu }>
-        <React.Fragment>
-          <div className={ classes.assetSelectIcon }>
-            <img
-              alt=""
-              src={ this.getLogoForAsset(option) }
-              height="30px"
-            />
-          </div>
-          <div className={ classes.assetSelectIconName }>
-            <Typography variant='h4'>{ option.symbol }</Typography>
-          </div>
-        </React.Fragment>
+      <MenuItem key={option.symbol} value={option.symbol} className={ classes.poolSelectOption }>
+        <div>
+          <Typography variant='h4'>{ option.name }</Typography>
+          { option.balance > 0 ? <Typography variant='h5' className={ classes.gray }>Bal: { option.balance ? option.balance.toFixed(4) : '' }</Typography> : '' }
+        </div>
+        <Typography variant='h5' className={`${ option.version === 1 ? classes.version1 : classes.version2 }`}>version { option.version }</Typography>
       </MenuItem>
     )
   }
@@ -450,8 +494,9 @@ class Liquidity extends Component {
             disabled={ loading }
             className={ classes.actionInput }
             placeholder={ 'Select' }
+            helperText={ 'Deposits are closed for V1 pools' }
           >
-            { pools ? pools.map((pool) => { return this.renderPoolOption(pool) }) : null }
+            { pools ? pools.filter((pool) => { return pool.version === 2; }).map((pool) => { return this.renderPoolOption(pool) }) : null }
           </TextField>
         </div>
       </div>
@@ -463,18 +508,10 @@ class Liquidity extends Component {
 
     return (
       <MenuItem key={option.symbol} value={option.symbol} className={ classes.assetSelectMenu }>
-        <React.Fragment>
-          <div className={ classes.assetSelectIcon }>
-            <img
-              alt=""
-              src={ this.getLogoForAsset(option) }
-              height="30px"
-            />
-          </div>
-          <div className={ classes.assetSelectIconName }>
-            <Typography variant='h4'>{ option.symbol }</Typography>
-          </div>
-        </React.Fragment>
+        <div className={ classes.poolSelectOption }>
+          <Typography variant='h4'>{ option.name }</Typography>
+          <Typography variant='h5' className={`${ option.version === 1 ? classes.version1 : classes.version2 }`}>version { option.version }</Typography>
+        </div>
       </MenuItem>
     )
   }
@@ -490,15 +527,15 @@ class Liquidity extends Component {
 
     return (
       <React.Fragment>
-        { this.renderPoolSelect() }
+        { this.renderPoolSelect('deposit') }
         <div className={ classes.space }></div>
         {
           selectedPool && selectedPool.assets && selectedPool.assets.length > 0 && selectedPool.assets.map((p) => {
             return this.renderAssetInput(p, 'deposit')
           })
         }
-        <div className={ classes.space }></div>
-        { this.renderDepositAmount() }
+        { selectedPool && selectedPool.assets && <div className={ classes.space }></div> }
+        { selectedPool && selectedPool.assets && this.renderDepositAmount() }
         <Button
           className={ classes.actionButton }
           variant="outlined"
@@ -663,8 +700,6 @@ class Liquidity extends Component {
     val[thePool[0].assets[0].symbol+'Amount'] = thePool[0].assets[0].balance.toFixed(thePool[0].assets[0].decimals)
     val[thePool[0].assets[1].symbol+'Amount'] = thePool[0].assets[1].balance.toFixed(thePool[0].assets[1].decimals)
     this.setState(val)
-
-    this.setState(val)
   }
 
   onChange = (event) => {
@@ -728,9 +763,13 @@ class Liquidity extends Component {
   }
 
   toggleDeposit = () => {
+    if(this.state.loading) {
+      return
+    }
+
     this.setState({ activeTab: 'deposit', poolAmount: '' })
 
-    const {
+    let {
       pools,
       pool,
       selectedPool
@@ -738,6 +777,27 @@ class Liquidity extends Component {
 
     if(!selectedPool) {
       return false
+    }
+    if(selectedPool.version === 1) {
+      selectedPool = null
+
+      if(pools && pools.length > 0) {
+        const v2PoolsArr = pools.filter((pool) => {
+          return pool.version === 2
+        })
+        if(v2PoolsArr.length > 0) {
+          selectedPool = v2PoolsArr[0]
+        }
+      }
+
+      this.setState({
+        selectedPool: selectedPool,
+        pool: selectedPool ? selectedPool.symbol : ''
+      })
+
+      if(!selectedPool) {
+        return
+      }
     }
 
     const val = []
@@ -747,16 +807,30 @@ class Liquidity extends Component {
   }
 
   toggleWithdraw = () => {
+    if(this.state.loading) {
+      return
+    }
+
     this.setState({ activeTab: 'withdraw', poolAmount: '' })
 
-    const {
+    let {
       pools,
       pool,
       selectedPool
     } = this.state
 
+    if(!pools) {
+      return
+    }
+
     if(!selectedPool) {
-      return false
+      selectedPool = pools[0]
+      pool = pools[0].symbol
+
+      this.setState({
+        selectedPool: selectedPool,
+        pool: pool
+      })
     }
 
     const val = []
