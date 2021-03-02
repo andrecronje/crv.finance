@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { Alert } from '@material-ui/lab'
 import { withStyles } from '@material-ui/core/styles';
 import { colors } from '../../theme'
+import { floatToFixed } from '../../utils/numbers'
 
 const styles = () => ({
   infoAlert: {
@@ -30,7 +31,7 @@ const RateInfo = ({
 
   return (
     <Alert icon={false} className={classes.infoAlert}>
-      Exchange rate {fromAsset}/{toAsset} (including fees): <strong>{Number(receivePerSend).toFixed(4)}</strong>
+      Exchange rate {fromAsset}/{toAsset} (including fees): <strong>{floatToFixed(receivePerSend, 4)}</strong>
     </Alert>
   )
 }

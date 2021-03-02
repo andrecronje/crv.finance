@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component, Fragment } from "react";
 import { withRouter } from "react-router-dom";
 import { withStyles } from '@material-ui/core/styles';
 import {
@@ -12,6 +12,9 @@ import { colors } from '../../theme'
 
 import Loader from '../loader'
 import RateInfo from '../rateInfo'
+import UnderlyingAssetsInfo from './underlyingAssetsInfo'
+import PoolSeedingCTA from '../poolSeedingCTA'
+import { floatToFixed } from '../../utils/numbers'
 
 import {
   ERROR,
@@ -350,12 +353,12 @@ class Swap extends Component {
     const {
       loading,
       account,
-      activeTab,
       fromAsset,
       toAsset,
       fromAmount,
       receivePerSend,
       sendPerReceive,
+      selectedPool,
     } = this.state
 
     if(!account || !account.address) {
@@ -366,27 +369,33 @@ class Swap extends Component {
       <div className={ classes.root }>
         <div className={ classes.inputContainer }>
           { this.renderPoolSelect() }
-          { this.renderAssetInput('from') }
-          <div className={ classes.swapIconContainer }>
-            <SwapVertIcon className={ classes.swapIcon } onClick={ this.swapAssets }/>
-          </div>
-          { this.renderAssetInput('to') }
-          <RateInfo
-            fromAsset={fromAsset}
-            toAsset={toAsset}
-            receivePerSend={receivePerSend}
-            sendPerReceive={sendPerReceive}
-          />
-          <Button
-            className={ classes.actionButton }
-            variant="outlined"
-            color="primary"
-            disabled={ loading || fromAmount === '' }
-            onClick={ this.onSwap }
-            fullWidth
-            >
-            <Typography className={ classes.buttonText } variant={ 'h4'} color='secondary'>{ ( fromAmount === '') && 'enter from amount' }{ (fromAmount !== '') && 'swap' }</Typography>
-          </Button>
+          {(selectedPool && !selectedPool.isPoolSeeded) &&
+            <PoolSeedingCTA pool={selectedPool} />}
+          {(!selectedPool || selectedPool.isPoolSeeded) && (
+            <Fragment>
+              { this.renderAssetInput('from') }
+              <div className={ classes.swapIconContainer }>
+                <SwapVertIcon className={ classes.swapIcon } onClick={ this.swapAssets }/>
+              </div>
+              { this.renderAssetInput('to') }
+              <RateInfo
+                fromAsset={fromAsset}
+                toAsset={toAsset}
+                receivePerSend={receivePerSend}
+                sendPerReceive={sendPerReceive}
+              />
+              <Button
+                className={ classes.actionButton }
+                variant="outlined"
+                color="primary"
+                disabled={ loading || fromAmount === '' }
+                onClick={ this.onSwap }
+                fullWidth
+                >
+                <Typography className={ classes.buttonText } variant={ 'h4'} color='secondary'>{ ( fromAmount === '') && 'enter from amount' }{ (fromAmount !== '') && 'swap' }</Typography>
+              </Button>
+            </Fragment>
+          )}
         </div>
         { loading && <Loader /> }
       </div>
@@ -394,7 +403,7 @@ class Swap extends Component {
   };
 
   renderPoolSelect = () => {
-    const { loading, pools, pool } = this.state
+    const { loading, pools, pool, selectedPool } = this.state
     const { classes } = this.props
 
     return (
@@ -432,6 +441,7 @@ class Swap extends Component {
             { pools ? pools.map((pool) => { return this.renderPoolOption(pool) }) : null }
           </TextField>
         </div>
+        <UnderlyingAssetsInfo selectedPool={selectedPool} />
       </div>
     )
   }
@@ -483,7 +493,7 @@ class Swap extends Component {
             <Typography variant='h4'>{ type }</Typography>
           </div>
           <div className={ classes.balances }>
-            { (asset ? (<Typography variant='h4' onClick={ () => { this.setAmount(asset.symbol, type, (asset ? asset.balance.toFixed(asset.decimals) : '0')) } } className={ classes.value } noWrap>{ 'Balance: '+ ( asset && asset.balance ? (Math.floor(asset.balance*10000)/10000).toFixed(4) : '0.0000') } { asset ? asset.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
+            { (asset ? (<Typography variant='h4' onClick={ () => { this.setAmount(asset.symbol, type, (asset ? floatToFixed(asset.balance, asset.decimals) : '0')) } } className={ classes.value } noWrap>{ 'Balance: '+ ( asset && asset.balance ? floatToFixed(asset.balance, 4) : '0.0000') } { asset ? asset.symbol : '' }</Typography>) : <Typography variant='h4' className={ classes.value } noWrap>Balance: -</Typography>) }
           </div>
         </div>
         <div>
@@ -581,15 +591,18 @@ class Swap extends Component {
     val[event.target.name] = event.target.value
     this.setState(val)
 
-    const thePool = this.state.pools.filter((pool) => {
+    const selectedPool = this.state.pools.find((pool) => {
       return pool.id === event.target.value
     })
 
     //on change pool change assets as well
     this.setState({
-      fromAsset: thePool[0].assets.[0].symbol,
-      toAsset: thePool[0].assets.[1].symbol,
-      selectedPool: thePool[0]
+      fromAsset: selectedPool.assets[0].symbol,
+      toAsset: selectedPool.assets[1].symbol,
+      selectedPool,
+      toAmount: '',
+      receivePerSend: '',
+      sendPerReceive: '',
     })
 
     const that = this
@@ -638,6 +651,8 @@ class Swap extends Component {
       selectedPool,
       fromAmount
     } = this.state
+
+    if (!selectedPool.isPoolSeeded) return
 
     const from = selectedPool.assets.filter((asset) => {
       return asset.symbol === fromAsset
