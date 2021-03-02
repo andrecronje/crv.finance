@@ -32,4 +32,5 @@ export {
   multiplyArray,
   sumArray,
   sumArrayBn,
+  floatToFixed,
 }

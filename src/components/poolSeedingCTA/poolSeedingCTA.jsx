@@ -24,7 +24,7 @@ const DepositPageLink = ({ pool, classes }) => {
   const history = useHistory();
 
   return (
-    <span onClick={() => history.push(`/liquidity#pool=${pool.id}`)} className={classes.link}>Seed pool yoursel</span>
+    <span onClick={() => history.push(`/liquidity#pool=${pool.id}`)} className={classes.link}>Seed pool yourself</span>
   );
 };
 
