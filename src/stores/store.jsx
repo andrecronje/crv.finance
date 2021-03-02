@@ -531,14 +531,28 @@ class Store {
   _callAddLiquidity = async (web3, account, pool, amounts, callback) => {
     const metapoolContract = new web3.eth.Contract(pool.liquidityABI, pool.liquidityAddress)
 
-    console.log(pool.address)
-    console.log(amounts)
-    const amountToReceive = await metapoolContract.methods.calc_token_amount(pool.address, amounts, true).call()
-
-    const receive = new BigNumber(amountToReceive)
-      .times(95)
-      .dividedBy(100)
-      .toFixed(0)
+    console.log(pool.liquidityAddress)
+    let receive = '0'
+    try {
+      const amountToReceive = await metapoolContract.methods.calc_token_amount(pool.address, amounts, true).call()
+      receive = new BigNumber(amountToReceive)
+        .times(95)
+        .dividedBy(100)
+        .toFixed(0)
+    } catch(ex) {
+      console.log(ex)
+      //if we can't calculate, we need to check the totalSupply
+      // if 0, we just set receive to 0
+      // if not 0, we throw an exception because it shouldn't be.
+      const tokenContract = new web3.eth.Contract(config.erc20ABI, pool.address)
+      const totalSupply = await tokenContract.methods.totalSupply().call()
+      console.log(totalSupply)
+      if(totalSupply == 0) {
+        receive = '0'
+      } else {
+        return callback(ex)
+      }
+    }
 
     console.log(pool.address, amounts, receive)
 
