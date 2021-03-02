@@ -1,5 +1,6 @@
 import config from '../config'
 import async from 'async'
+import memoize from 'memoizee'
 import BigNumber from 'bignumber.js'
 import { bnToFixed, multiplyBnToFixed, sumArray } from '../utils/numbers'
 
@@ -326,6 +327,34 @@ class Store {
     return emitter.emit(BALANCES_RETURNED)
   }
 
+  _getCoinData = memoize(async ({ web3, filteredCoins, coinAddress, accountAddress }) => {
+    const erc20Contract0 = new web3.eth.Contract(config.erc20ABI, coinAddress)
+
+    const symbol0 = await erc20Contract0.methods.symbol().call()
+    const decimals0 = parseInt(await erc20Contract0.methods.decimals().call())
+    const name0 = await erc20Contract0.methods.name().call()
+
+    let balance0 = await erc20Contract0.methods.balanceOf(accountAddress).call()
+    const bnDecimals0 = new BigNumber(10)
+      .pow(decimals0)
+
+    balance0 = new BigNumber(balance0)
+      .dividedBy(bnDecimals0)
+      .toFixed(decimals0, BigNumber.ROUND_DOWN)
+
+    return {
+      index: filteredCoins.indexOf(coinAddress),
+      erc20address: coinAddress,
+      symbol: symbol0,
+      decimals: decimals0,
+      name: name0,
+      balance: parseFloat(balance0)
+    }
+  }, {
+    promise: true,
+    normalizer: ([{ coinAddress, accountAddress }]) => `${coinAddress}-${accountAddress}`,
+  })
+
   _getPoolData = async (web3, pool, account, callback) => {
     try {
       const erc20Contract = new web3.eth.Contract(config.erc20ABI, pool)
@@ -343,6 +372,9 @@ class Store {
         .toFixed(decimals, BigNumber.ROUND_DOWN)
 
       const curveFactoryContract = new web3.eth.Contract(config.curveFactoryABI, config.curveFactoryAddress)
+      const poolBalances = await curveFactoryContract.methods.get_balances(pool).call()
+      const isPoolSeeded = sumArray(poolBalances) !== 0
+
       let coins = await curveFactoryContract.methods.get_underlying_coins(pool).call()
 
       let filteredCoins = coins.filter((coin) => {
@@ -351,28 +383,12 @@ class Store {
 
       async.map(filteredCoins, async (coin, callbackInner) => {
         try {
-          const erc20Contract0 = new web3.eth.Contract(config.erc20ABI, coin)
-
-          const symbol0 = await erc20Contract0.methods.symbol().call()
-          const decimals0 = parseInt(await erc20Contract0.methods.decimals().call())
-          const name0 = await erc20Contract0.methods.name().call()
-
-          let balance0 = await erc20Contract0.methods.balanceOf(account.address).call()
-          const bnDecimals0 = new BigNumber(10)
-            .pow(decimals0)
-
-          balance0 = new BigNumber(balance0)
-            .dividedBy(bnDecimals0)
-            .toFixed(decimals0, BigNumber.ROUND_DOWN)
-
-          const returnCoin = {
-            index: filteredCoins.indexOf(coin),
-            erc20address: coin,
-            symbol: symbol0,
-            decimals: decimals0,
-            name: name0,
-            balance: parseFloat(balance0)
-          }
+          const returnCoin = await this._getCoinData({
+            web3,
+            filteredCoins,
+            coinAddress: coin,
+            accountAddress: account.address,
+          });
 
           if(callbackInner) {
             callbackInner(null, returnCoin)
@@ -418,6 +434,7 @@ class Store {
           decimals: decimals,
           name: name,
           balance: parseFloat(balance),
+          isPoolSeeded,
           id: symbol,
           assets: assets
         })

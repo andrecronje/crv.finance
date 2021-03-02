@@ -122,6 +122,9 @@ const iswapTheme =  {
     },
     MuiSelect: {
       select: {
+        "&:focus": {
+          borderRadius: '50px'
+        },
         padding: '9px'
       },
       selectMenu: {
