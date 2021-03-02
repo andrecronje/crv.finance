@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { withRouter } from "react-router-dom";
+import { Alert } from '@material-ui/lab'
 import { withStyles } from '@material-ui/core/styles';
 import {
   Typography,
@@ -242,6 +243,14 @@ const styles = theme => ({
     borderBottom: '1px solid #E1E1E1',
     margin: '24px',
   },
+  infoAlert: {
+    width: '100%',
+    marginBottom: '12px',
+    backgroundColor: colors.gray,
+    '& a': {
+      color: 'inherit',
+    }
+  },
 });
 
 class AddPool extends Component {
@@ -334,6 +343,9 @@ class AddPool extends Component {
       <div className={ classes.root }>
         <div className={ classes.inputContainer }>
           <Typography variant='h2' align='center' className={ classes.poolInfoHeader }>Setup</Typography>
+          <Alert icon={false} className={classes.infoAlert}>
+            Note: The factory does not support tokens with transfer fees.<br /><a href="https://curve.readthedocs.io/factory-deployer.html#limitations" target="_blank" rel="noopener noreferrer">Read all expected behaviors and limitations</a>
+          </Alert>
           { this.renderInput('name') }
           { this.renderInput('symbol') }
           { this.renderAddressInput() }
