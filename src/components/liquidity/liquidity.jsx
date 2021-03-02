@@ -595,7 +595,8 @@ class Liquidity extends Component {
       slippagePcent,
       selectedPool
     } = this.state
-
+    let amount = depositAmount;
+    if (!depositAmount) amount = 0.00
     if (selectedPool && !selectedPool.isPoolSeeded) return null;
 
     return (

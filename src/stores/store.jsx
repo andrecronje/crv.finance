@@ -301,8 +301,6 @@ class Store {
         return emitter.emit(SNACKBAR_ERROR, err)
       }
 
-      console.log(poolData)
-
       store.setStore({ pools: poolData })
       return emitter.emit(CONFIGURE_RETURNED)
     })
@@ -386,7 +384,7 @@ class Store {
       symbol: symbol0,
       decimals: decimals0,
       name: name0,
-      balance: parseFloat(balance0)
+      balance: balance0
     }
   }, {
     promise: true,
@@ -458,8 +456,6 @@ class Store {
         let liquidityABI = ''
 
         const basePools = store.getStore('basePools')
-
-        console.log(assets);
 
         if(assets[1].erc20address.toLowerCase() === '0x6B175474E89094C44Da98b954EedeAC495271d0F'.toLowerCase()) {
           liquidityAddress = config.usdDepositerAddress
@@ -535,7 +531,8 @@ class Store {
   _callAddLiquidity = async (web3, account, pool, amounts, callback) => {
     const metapoolContract = new web3.eth.Contract(pool.liquidityABI, pool.liquidityAddress)
 
-    console.log(pool.liquidityAddress)
+    console.log(pool.address)
+    console.log(amounts)
     const amountToReceive = await metapoolContract.methods.calc_token_amount(pool.address, amounts, true).call()
 
     const receive = new BigNumber(amountToReceive)
@@ -757,7 +754,7 @@ class Store {
         symbol: symbol,
         decimals: decimals,
         name: name,
-        balance: parseFloat(balance)
+        balance: balance
       }
 
       emitter.emit(GET_ASSET_INFO_RETURNED, returnObj)
