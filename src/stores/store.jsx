@@ -536,12 +536,18 @@ class Store {
     const metapoolContract = new web3.eth.Contract(pool.liquidityABI, pool.liquidityAddress)
 
     console.log(pool.liquidityAddress)
-    const amountToReceive = await metapoolContract.methods.calc_token_amount(pool.address, amounts, true).call()
-
-    const receive = new BigNumber(amountToReceive)
-      .times(95)
-      .dividedBy(100)
-      .toFixed(0)
+    let receive = 0
+    try {
+      const amountToReceive = await metapoolContract.methods.calc_token_amount(pool.address, amounts, true).call()
+      receive = new BigNumber(amountToReceive)
+        .times(95)
+        .dividedBy(100)
+        .toFixed(0)
+    } catch(ex) {
+      console.log(ex)
+      // just set it to 0
+      receive = '0'
+    }
 
     console.log(pool.address, amounts, receive)
 
