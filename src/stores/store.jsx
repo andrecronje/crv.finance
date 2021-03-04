@@ -474,7 +474,7 @@ class Store {
           name: name,
           balance: balance.toString(),
           isPoolSeeded,
-          id: symbol,
+          id: `${symbol}-${pool.version}`,
           assets: assets
         })
       })
