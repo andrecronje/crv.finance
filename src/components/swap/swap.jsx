@@ -242,7 +242,7 @@ class Swap extends Component {
 
     this.state = {
       pools: pools,
-      pool: selectedPool ? selectedPool.symbol : '',
+      pool: selectedPool ? selectedPool.id : '',
       selectedPool: selectedPool,
       fromAsset: selectedPool && selectedPool.assets.length > 0 ? selectedPool.assets[0].symbol : '',
       toAsset: selectedPool && selectedPool.assets.length > 0 ? selectedPool.assets[1].symbol : '',
@@ -283,7 +283,7 @@ class Swap extends Component {
     this.setState({
       account: store.getStore('account'),
       pools: pools,
-      pool: selectedPool ? selectedPool.symbol : '',
+      pool: selectedPool ? selectedPool.id : '',
       selectedPool: selectedPool,
       fromAsset: selectedPool && selectedPool.assets.length > 0 ? selectedPool.assets[0].symbol : '',
       toAsset: selectedPool && selectedPool.assets.length > 0 ? selectedPool.assets[1].symbol : '',
@@ -303,7 +303,7 @@ class Swap extends Component {
 
     this.setState({
       pools: pools,
-      pool: selectedPool ? selectedPool.symbol : '',
+      pool: selectedPool ? selectedPool.id : '',
       selectedPool: selectedPool,
       fromAsset: selectedPool && selectedPool.assets.length > 0 ? selectedPool.assets[0].symbol : '',
       toAsset: selectedPool && selectedPool.assets.length > 0 ? selectedPool.assets[1].symbol : '',
@@ -450,7 +450,7 @@ class Swap extends Component {
     const { classes } = this.props
 
     return (
-      <MenuItem key={option.id} value={option.symbol} className={ classes.assetSelectMenu }>
+      <MenuItem key={option.id} value={option.id} className={ classes.assetSelectMenu }>
         <div className={ classes.poolSelectOption }>
           <Typography variant='h4'>{ option.name }</Typography>
           <Typography variant='h5' className={`${ option.version === 1 ? classes.version1 : classes.version2 }`}>version { option.version }</Typography>
