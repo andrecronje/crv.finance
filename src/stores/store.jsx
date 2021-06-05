@@ -873,18 +873,15 @@ class Store {
 
   _getGasPrice = async () => {
     try {
-      const url = 'https://gasprice.poa.network/'
-      const priceString = await rp(url)
-      const priceJSON = JSON.parse(priceString)
-      if(priceJSON) {
-        return priceJSON.fast.toFixed(0)
-      }
-      return store.getStore('universalGasPrice')
-    } catch(e) {
-      console.log(e)
-      return store.getStore('universalGasPrice')
+      const web3 = await this._getWeb3Provider();
+      const gasPrice = await web3.eth.getGasPrice();
+      const gasPriceInGwei = web3.utils.fromWei(gasPrice, "gwei");
+      return gasPriceInGwei;
+    } catch (e) {
+      console.log(e);
+      return store.getStore("universalGasPrice");
     }
-  }
+  };
 
   _getWeb3Provider = async () => {
     const web3context = store.getStore('web3context')
